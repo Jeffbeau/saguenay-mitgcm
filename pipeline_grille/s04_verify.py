@@ -124,9 +124,11 @@ def main():
         row = [f"{table[t][k]['depth']:.1f} ({table[t][k]['lon']:.3f}°, {table[t][k]['lat']:.3f}°)"
                for t in table]
         rep.append(f"| {a} / {b} | " + " | ".join(row) + " |")
-    # distance le long du chenal (enfant 25 m) depuis le seuil d'entrée
+    # distance le long du chenal depuis le seuil d'entrée (enfant s'il contient les 3 cols)
     from skimage.graph import MCP_Geometric
-    GD = E if E is not None else P
+    GD = P
+    if E is not None and all(np.isfinite(s["lon"]) for s in table[f"{E.name} {E.dx:g} m"]):
+        GD = E
     HEc = res[GD.name][0]
     def ij(lo, la):
         x, y = G.to_utm(lo, la)
@@ -188,7 +190,7 @@ def figures(P, E, HP, res, table, dz, X10, Y10, H10, rep):
                colors="orange", linewidths=.7)
     if E is not None:
         ax.plot(np.r_[E.x0, E.x1, E.x1, E.x0, E.x0] / 1e3, np.r_[E.y0, E.y0, E.y1, E.y1, E.y0] / 1e3,
-                "r-", lw=1.5, label="enfant 25 m")
+                "r-", lw=1.5, label=f"enfant {E.dx:g} m")
     for t, rows in table.items():
         if t.startswith("parent"):
             for s in rows:
@@ -226,7 +228,7 @@ def child_figure(E, res):
     ax.set_aspect(1); ax.set_title(f"Enfant {E.dx:g} m ({E.nx}x{E.ny}) ; rouge = bande copiée du parent")
     plt.colorbar(pc, ax=ax, label="m", shrink=.8)
     fig.savefig(C.OUT / "fig_child.png", dpi=110, bbox_inches="tight"); plt.close(fig)
-    return [("child 25 m", *grid_xy(E), He)]
+    return [(f"child {E.dx:g} m", *grid_xy(E), He)]
 
 
 def sills_and_vertical(cols, table, dz, pkey, rep):
@@ -238,6 +240,9 @@ def sills_and_vertical(cols, table, dz, pkey, rep):
             a = axs[k, col]
             m = (np.abs(XX - x) < w) & (np.abs(YY - y) < w)
             jj, ii = np.nonzero(m)
+            if jj.size == 0:                  # col hors de l'emprise (petit enfant)
+                a.set_axis_off(); a.set_title(f"{s['pair']} — {lab}\nhors domaine", fontsize=9)
+                continue
             sl = (slice(jj.min(), jj.max() + 1), slice(ii.min(), ii.max() + 1))
             pcm = a.pcolormesh(XX[sl] / 1e3, YY[sl] / 1e3, HH[sl], cmap="viridis_r",
                                vmin=0, vmax=max(3 * s["depth"], 60), shading="auto")

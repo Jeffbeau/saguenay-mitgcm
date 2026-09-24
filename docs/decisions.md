@@ -31,6 +31,8 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
 - full : parent 100 m 1200×532×60, enfant 25 m 1504×864×60 (grappe de calcul).
 - lite : parent 200 m 600×268×32, tout le fjord. Trop lourd pour la VM de 4 Go.
 - **mini** (tests sur la VM) : zone des seuils seule, 200 m, 188×108×32 (650 k points), nPx=2 (mpirun -np 2). OB : O 10 (coupe du fjord à 70,06°O), E 75, S 45. L'OB ouest impose Q = Q_riv − A_amont·dη/dt, avec A_amont = 213 km² (lu sur lite). E/S : (A_mini + A_amont)·dη/dt − Q_riv. Vérifié : η = ±1,60 m. Cols conservés (23,3 / 68,0 / 124,2 m). HMAX 270 m.
+- **Enfant du mini** (2026-09-24, pour la Config B) : 50 m (rapport 4), bbox (−69,760, −69,620, 48,115, 48,170), du bassin extérieur à la tête du chenal Laurentien, autour du seuil d'entrée. Sur une bathymétrie synthétique : 192×112×32 (0,69 M points), faces i = 111..159, j = 18..46 du parent, OB sur les 4 côtés. Emprise de départ à vérifier sur fig_child.png. Δt 5 s ; éponge 1 km. Estimation : ~0,8 Go, 2 cycles NH ≈ 1,5 à 2,5 h sur 2 cœurs.
+- **Alignement.** s02 aligne l'enfant sur les faces du parent (gridlib.make_grid, `align`) : dans le mini, dx parent = 200 m ≠ SNAP = 100 m. Sans effet sur le profil full (dx parent = SNAP).
 - Corrections bathy : voir README.
 
 ## Forçage parent (s05_forcing.py) — Config A
@@ -77,7 +79,8 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
 - **Alerte pour le mini à 200 m.** Les vitesses au seuil d'entrée atteignent ~3,8 m/s dans le cas test, donc le CFL u pourrait monter vers 0,57. Surveiller advcfl ; au besoin, passer à l'advection verticale implicite ou à Δt = 15 s.
 
 ## Imbrication parent → enfant (2026-09-24)
-- **Outils.** `imbrication/extraire_obcs.py` (OB*.bin et conditions initiales), `imbrication/comparer.py` (cohérence), `imbrication/enfant_depuis_pipeline.py` (enfant.json depuis s02/s03), `scripts/run_imbrication.sh` (cas test de bout en bout).
+- **Outils.** `imbrication/extraire_obcs.py` (OB*.bin et conditions initiales), `imbrication/comparer.py` (cohérence), `imbrication/config_enfant.py` (namelists, code/, enfant.json : commun au cas test et au vrai enfant), `imbrication/enfant_depuis_pipeline.py` (config complète du vrai enfant depuis s02/s03 ; physique et tRef/sRef lus dans le data du parent), `scripts/run_imbrication.sh` (cas test de bout en bout).
+- **Tests du chemin pipeline (nuage, sans NONNA).** s02 → s04 en profil mini sur une bathymétrie synthétique au format de s01 : col d'entrée 23,4 m à 50 m (23,1 m sur la grille 10 m), sections OB de l'enfant identiques à celles du parent. `enfant_depuis_pipeline.py` sur le cas test : même config que `gen_enfant.py --nh` ; enfant NH compilé en MPI (`genmake2 -mpi`, nPx = 2) et lancé avec `mpirun -np 2`.
 - **Hypothèses.** Grilles cartésiennes uniformes, faces de l'enfant alignées sur celles du parent, même grille verticale. Parent lu par bandes (memmap) ; conditions initiales écrites niveau par niveau.
 - **Méthode.** Interpolation bilinéaire (points secs remplis par le plus proche mouillé), linéaire en temps. Correction de flux par frontière et par enregistrement : vitesse uniforme ajoutée pour que le débit entrant égale celui du parent à travers la même ligne de faces, moins le remplissage des cellules OB. Seules les faces qui alimentent une cellule intérieure sont comptées et corrigées. En z*, fichiers OB*eta et facteur (1 + η_OB/H). Enfant NH : OB*w en vitesse vraie.
 - **Démarrage.** T, S, U, V, η du parent à t0. Les vitesses interpolées ne sont pas à divergence nulle : en NH, CFL w = 2,1 au premier pas seulement, puis comme A.

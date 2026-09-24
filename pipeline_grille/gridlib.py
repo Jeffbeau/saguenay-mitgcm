@@ -74,16 +74,20 @@ class Grid:
                 f"x=[{self.x0:.0f},{self.x1:.0f}] y=[{self.y0:.0f},{self.y1:.0f}])")
 
 
-def snap_in(a, b, step):
-    return np.ceil(a / step) * step, np.floor(b / step) * step
+def snap_in(a, b, step, origin=0.0):
+    return (origin + np.ceil((a - origin) / step) * step,
+            origin + np.floor((b - origin) / step) * step)
 
 
-def make_grid(name, x0, x1, y0, y1, dx):
-    x0, x1 = snap_in(x0, x1, C.SNAP)
-    y0, y1 = snap_in(y0, y1, C.SNAP)
+def make_grid(name, x0, x1, y0, y1, dx, align=None):
+    """Bornes arrondies vers l'intérieur sur la grille SNAP, ou sur les faces d'un parent
+    (align = (x0p, y0p, dxp)) : obligatoire quand dx parent != SNAP (profil mini)."""
+    ox, oy, snap = (0.0, 0.0, C.SNAP) if align is None else align
+    x0, x1 = snap_in(x0, x1, snap, ox)
+    y0, y1 = snap_in(y0, y1, snap, oy)
     nx = int(round((x1 - x0) / dx)); ny = int(round((y1 - y0) / dx))
-    # Nx, Ny multiples de PAD_MULT*(SNAP/dx) pour garder les bornes sur la grille SNAP
-    m = C.PAD_MULT * int(round(C.SNAP / dx)) if dx < C.SNAP else C.PAD_MULT
+    # Nx, Ny multiples de PAD_MULT*(snap/dx) pour garder les bornes sur la grille snap
+    m = C.PAD_MULT * int(round(snap / dx)) if dx < snap else C.PAD_MULT
     nx -= nx % m; ny -= ny % m
     return Grid(name, x0, y0, dx, nx, ny)
 

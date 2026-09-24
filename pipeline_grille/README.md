@@ -11,6 +11,10 @@ matplotlib, scikit-image). Tous les paramètres sont dans `config.py`.
 | 4 | `s04_verify.py` | relecture binaire, profondeur des seuils à 10/25/100 m, sections aux OB, figures |
 | 5 | `s05_forcing.py` | parent : marée M2 (pompage par l'estuaire), rivière, T/S initiaux types, namelists et code MITgcm → `parent/run/` |
 
+Profil `SAG_PROFILE=mini` : parent 200 m sur la zone des seuils + enfant 50 m sur le seuil d'entrée
+(`output_mini/`, emprise dans `config.py`). L'enfant sert à la Config B non hydrostatique ; voir le README
+principal (« Enfant 50 m du mini »).
+
 Profils : `SAG_PROFILE=full` (défaut ; parent 100 m + enfant 25 m, 60 niveaux → `output/`) ou
 `SAG_PROFILE=lite` (parent 200 m, 32 niveaux, pour tests sur ordinateur personnel → `output_lite/`).
 

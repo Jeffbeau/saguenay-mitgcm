@@ -144,7 +144,8 @@ TIDE_AMP = 1.6                 # m : amplitude M2 visée dans le domaine (marée
                                #   (PMM - BMM)/2 = (4,06 - 0,79)/2 à Tadoussac). VE : ~2,8 m.
 Q_RIVER = 1200.0               # m3/s, Saguenay à Chicoutimi (constant)
 T_RIVER, S_RIVER = 8.0, 0.0
-DT = {200.0: 30.0, 100.0: 20.0, 25.0: 5.0}   # s, par résolution (diviseurs de 1860 s)
+DT = {200.0: 30.0, 100.0: 20.0, 50.0: 5.0, 25.0: 5.0}   # s, par résolution (diviseurs de 1860 s ;
+                               #   l'enfant forcé par le parent : diviseur de 930 et 360 s)
 SPONGE_M = 3000.0              # m : épaisseur de l'éponge OBCS
 # Profils types d'été (analytiques, ordres de grandeur ; z positif vers le bas, m)
 #   fjord    : couche saumâtre ~5 m (S~8, T~14 °C), halocline à 6 m, eau profonde S 30,8 / T 1,5 °C
@@ -183,7 +184,12 @@ if PROFILE == "lite":
 # ~8x plus léger que « lite » : tient dans < 1 Go, un cycle M2 en quelques minutes.
 # ---------------------------------------------------------------------------
 if PROFILE == "mini":
-    GRIDS = {"parent": dict(dx=200.0, bbox=(-70.060, -69.550, 48.080, 48.280))}
+    # Enfant 50 m (rapport 4) sur le seuil d'entrée, pour la Config B non hydrostatique :
+    # du bassin extérieur (69,775°O) à la tête du chenal Laurentien (69,63°O). Emprise de départ
+    # à ajuster sur fig_child.png : les OB doivent couper des chenaux nets, loin du seuil.
+    # ~208 x 112 x 32 (0,75 M points) : 2 cycles NH ~ 2-3 h sur 2 cœurs (estimation cas test).
+    GRIDS = {"parent": dict(dx=200.0, bbox=(-70.060, -69.550, 48.080, 48.280)),
+             "child": dict(dx=50.0, bbox=(-69.760, -69.620, 48.115, 48.170))}
     NR, NSURF, DZ_SURF = 32, 4, 2.0
     R_MAX_ALLOWED = 1.12
     OB_MIN_SEG = 2

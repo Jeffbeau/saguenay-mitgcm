@@ -28,7 +28,9 @@ def main():
     C.WORK.mkdir(exist_ok=True)
     grids = {}
     for name, p in C.GRIDS.items():
-        g = G.make_grid(name, *bbox_to_utm_inner(*p["bbox"]), p["dx"])
+        P = grids.get("parent")
+        align = (P.x0, P.y0, P.dx) if name == "child" else None     # faces sur celles du parent
+        g = G.make_grid(name, *bbox_to_utm_inner(*p["bbox"]), p["dx"], align=align)
         grids[name] = g
         print(f"[02] {g}")
 

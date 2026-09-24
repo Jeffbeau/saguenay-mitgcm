@@ -139,3 +139,25 @@ python3 imbrication/comparer.py PARENT_RUN ENFANT_DIR        # ENFANT_DIR/run/di
 Le contrôle compare, hors éponge de l'enfant, l'amplitude et la phase M2 de η, le niveau moyen, les débits aux coupes du fichier de coupes et la salinité moyenne. Le critère est un écart < 5 %.
 
 **Bogue de checkpoint69k.** Dans `pkg/obcs/obcs_apply_r_star.F`, aux frontières N et S, le facteur z* lit `OBNeta(j)`/`OBSeta(j)` au lieu de l'indice i. `gen_enfant.py` place une copie corrigée dans `code/` pour la config A. Tout enfant en z* avec une OB N ou S et des fichiers OB*eta doit l'embarquer.
+
+## Enfant 50 m du mini (Config B non hydrostatique, sur la VM)
+
+Le mini à 200 m sert de parent. Il doit avoir tourné 6 cycles avec `sagdiag/data.diagnostics.mini_recommande` (state3D à 930 s avec WVEL, eta2D à 360 s). L'enfant part de t0 = 89 280 s (2 cycles) et dure 2 cycles.
+
+```bash
+cd ~/saguenay-mitgcm/pipeline_grille
+for s in s02_grids s03_bathy s04_verify; do SAG_PROFILE=mini python3 $s.py; done
+# regarder output_mini/fig_child.png ; au besoin, ajuster l'emprise de "child" dans config.py et relancer
+cd ~/saguenay-mitgcm
+python3 imbrication/enfant_depuis_pipeline.py pipeline_grille/output_mini ~/runs/enfantB \
+    --parent ~/runs/mini --t0 89280 --cycles 2 --nh --npx 2
+python3 imbrication/extraire_obcs.py ~/runs/mini ~/runs/enfantB
+cd ~/runs/enfantB && mkdir -p build run && cd build
+~/MITgcm/tools/genmake2 -mpi -rootdir=$HOME/MITgcm -mods=../code && make depend && make -j3
+cd ../run && ln -sf ../input/* . && ln -sf ../build/mitgcmuv . && mpirun -np 2 ./mitgcmuv > output.txt
+cd ~/saguenay-mitgcm && python3 imbrication/comparer.py ~/runs/mini ~/runs/enfantB
+```
+
+Pour la Config A (hydrostatique, même grille), reprendre sans `--nh` dans `~/runs/enfantA`. Comparer A et B au seuil d'entrée isole l'effet non hydrostatique.
+
+À surveiller : `obcs_rapport.txt` (correction de flux de quelques %, bilan de volume < 1 %), le CFL dans `STDOUT.0000` (au premier pas, les vitesses interpolées ne sont pas à divergence nulle), puis `run/diag/imbrication.txt`. `comparer.py` ne compare les débits qu'aux coupes du fichier `--config` situées dans l'enfant, en mètres dans le repère du modèle.

@@ -22,7 +22,7 @@ Configuration MITgcm (checkpoint69k) haute résolution du fjord du Saguenay : si
 | `docs/decisions.md` | Décisions, état, faits vérifiés |
 | `sagdiag/` | Diagnostics tourbillonnaires (numpy, scipy, matplotlib) |
 | `cas_test/` | Cas test synthétique « mini » : générateur, `code/`, namelists ; `gen_enfant.py` et `enfant_A/`, `enfant_B/` (imbrication) |
-| `imbrication/` | Extraction parent → enfant (OBCS hors ligne), contrôle de cohérence, enfant.json depuis le pipeline |
+| `imbrication/` | Extraction parent → enfant (OBCS hors ligne), contrôle de cohérence, config MITgcm de l'enfant (cas test et pipeline) |
 | `resultats_cas_test/` | Résultats de référence du cas test |
 | `pipeline_grille/` | Pipeline grille + bathy + forçage de l'utilisateur (s01..s05) |
 | `scripts/` | Installation de MITgcm, cas test et imbrication de bout en bout |
@@ -65,6 +65,6 @@ Cahier des charges : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3f
 
 ## Prochaines tâches
 
-- Enfant NH réel sur la VM : le mini (200 m) sert de parent, enfant à 50 m sur le seuil d'entrée (profil pipeline à ajouter, données NONNA sur la VM), puis `enfant_depuis_pipeline.py` → `extraire_obcs.py`.
+- Relancer le mini sur 6 cycles avec `sagdiag/data.diagnostics.mini_recommande` (il sert de parent : state3D à 930 s avec WVEL, eta2D à 360 s), puis analyser avec `--skip 2`.
+- Enfant 50 m du mini sur la VM (profil mini de `config.py`) : vérifier l'emprise sur `fig_child.png`, puis B (non hydrostatique) et A (hydrostatique) depuis t0 = 89 280 s ; procédure dans le README (« Enfant 50 m du mini »). Critère < 5 %, puis comparer A et B au seuil d'entrée.
 - Adapter `sagdiag/coupes_mini_modele.json` aux vrais seuils du mini.
-- Relancer le mini sur 6 cycles avec `sagdiag/data.diagnostics.mini_recommande`, puis analyser avec `--skip 2`.
