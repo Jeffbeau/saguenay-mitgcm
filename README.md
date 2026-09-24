@@ -17,6 +17,8 @@ Configuration MITgcm (checkpoint69k) du fjord du Saguenay et diagnostics tourbil
 | `sagdiag/data.diagnostics.mini_recommande` | Sorties recommandées pour le mini |
 | `cas_test/` | Générateur `gen_testcase.py`, `code/`, namelists |
 | `resultats_cas_test/` | Figures, tableaux et résumé du cas test |
+| `imbrication/` | Extraction parent → enfant (OBCS hors ligne, conditions initiales) et contrôle de cohérence |
+| `cas_test/gen_enfant.py` | Enfant du cas test : A hydrostatique z*, B non hydrostatique (`--nh`) |
 
 Seuls numpy, scipy et matplotlib sont requis. Aucune dépendance à MITgcmutils.
 
@@ -106,3 +108,34 @@ Le générateur écrit les enregistrements OBCS selon la convention de MITgcm : 
 - **Biais d'échantillonnage.** Avec N cycles, la variance autour de la moyenne de phase est sous-estimée d'un facteur (N−1)/N. L'EKE, les conversions et les flux tourbillonnaires sont donc multipliés par N/(N−1), soit ×1,5 pour 3 cycles.
 - **Éponges.** Une bande de `spongeThickness` mailles le long des 4 bords est exclue des intégrales et masquée sur les cartes (lu dans `data.obcs`).
 - **Mise en route.** `resume.txt` donne l'EKE par cycle. Si le premier cycle domine, la dérive d'ajustement contamine les écarts : augmente `--skip` et allonge le run.
+
+## Imbrication parent → enfant
+
+L'enfant est forcé hors ligne par les sorties du parent : OBCS aux frontières et conditions initiales à t0. Il faut des grilles cartésiennes uniformes, des faces de l'enfant alignées sur celles du parent et la même grille verticale.
+
+```bash
+bash scripts/run_cas_test.sh            # parent (cas test, 400 m)
+bash scripts/run_imbrication.sh A B     # enfants à 200 m, ~20 min en parallèle
+```
+
+Étapes, pour un autre couple parent/enfant :
+
+```bash
+python3 imbrication/extraire_obcs.py PARENT_RUN ENFANT_DIR   # OB*.bin, *_ini.bin, obcs_rapport.txt
+# ... compiler et lancer l'enfant dans ENFANT_DIR/run ...
+python3 imbrication/comparer.py PARENT_RUN ENFANT_DIR        # ENFANT_DIR/run/diag/imbrication.txt
+```
+
+`ENFANT_DIR/enfant.json` décrit la grille de l'enfant dans le repère du parent, ses frontières ouvertes, l'instant de départ t0 (multiple de 44 640 s), la durée, l'espacement des enregistrements et le type de surface libre. `cas_test/gen_enfant.py` l'écrit pour le cas test ; `imbrication/enfant_depuis_pipeline.py` l'écrit à partir des sorties du pipeline grille.
+
+| Étape | Méthode |
+| --- | --- |
+| Interpolation | Bilinéaire horizontale, points secs du parent remplis par le plus proche voisin mouillé ; linéaire en temps entre instantanés |
+| Enregistrements | n à t = (n − ½)·P, N + 1 enregistrements puis l'état à −P/2 ; externForcingCycle = (N + 2)·P |
+| Correction de flux | Par frontière et par enregistrement : vitesse uniforme ajoutée pour que le débit entrant égale celui du parent à travers la même ligne de faces, moins le remplissage des cellules OB. Seules les faces qui alimentent une cellule intérieure comptent (coins) |
+| z* | Débit de l'enfant avec le facteur (1 + η_OB/H) ; fichiers OB*eta fournis |
+| Enfant non hydrostatique | Surface libre linéaire, fichiers OB*w ; w vraie = w*(1 + η/H) + (1 − z/H)·∂η/∂t à partir d'un parent en z* |
+
+Le contrôle compare, hors éponge de l'enfant, l'amplitude et la phase M2 de η, le niveau moyen, les débits aux coupes du fichier de coupes et la salinité moyenne. Le critère est un écart < 5 %.
+
+**Bogue de checkpoint69k.** Dans `pkg/obcs/obcs_apply_r_star.F`, aux frontières N et S, le facteur z* lit `OBNeta(j)`/`OBSeta(j)` au lieu de l'indice i. `gen_enfant.py` place une copie corrigée dans `code/` pour la config A. Tout enfant en z* avec une OB N ou S et des fichiers OB*eta doit l'embarquer.

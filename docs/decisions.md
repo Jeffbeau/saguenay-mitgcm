@@ -21,6 +21,8 @@ Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-
 - Tourbillons définis par rapport à la moyenne de phase de marée (M2).
 - MITgcm checkpoint69k.
 - 3e seuil : on le garde dans le mini. L'enfant passe à 25 km si l'EKE du 3e seuil est sous 20 % de celle du 2e.
+- Extraction parent → enfant : `imbrication/extraire_obcs.py` (voir « Imbrication »). Enfant démarré à un t0 multiple de 44 640 s (phase M2 nulle), enregistrements OBCS toutes les 930 s (les instantanés 3D du parent).
+- Config B (non hydrostatique) : GGL90viscMax ≤ 0,2·dz_min²/Δt, car la viscosité verticale est explicite sur w.
 
 ## Pipeline grille + bathy + forçage
 Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib.py, s01..s05, run_all.py, templates/). Profils SAG_PROFILE : full (output/), lite (output_lite/), mini (output_mini/).
@@ -45,6 +47,11 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
 - **Éponge OBCS.** Elle relaxe U, V, T et S. Urelaxobcs* s'applique aux OB E/O, Vrelaxobcs* aux OB N/S.
 - **Diagnostics.** Les instantanés (frequency < 0) sont décalés par défaut de |freq|/2 : mettre timePhase(n) = 0. Une liste avec levels() réserve quand même Nr niveaux par champ dans numDiags.
 - **Namelists.** Chaque ligne doit commencer par une espace, sinon le terminateur « & » n'est pas reconnu. Une ligne de plus de ~200 caractères est tronquée sans avertissement : utiliser N*valeur.
+- **Faces OB.** La vitesse normale est imposée à u(OB_Iw+1) à l'ouest, u(OB_Ie) à l'est, v(OB_Js+1) au sud, v(OB_Jn) au nord ; T, S et w dans la cellule OB. Au coin de deux frontières, une face normale peut déboucher sur une cellule OB voisine : son débit n'entre pas dans l'intérieur.
+- **η aux OB en z*.** Sans fichier OB*eta, obcs_calc.F met OB*eta = 0 et update_etah.F l'applique : η = 0 dans les cellules OB, facteur z* = 1 aux faces OB. Le débit imposé vaut donc exactement u·A (hypothèse de gen_testcase.py et s05). OB*etaFile n'est permis qu'avec nonlinFreeSurf ≠ 0 (obcs_check.F).
+- **Bogue checkpoint69k.** obcs_apply_r_star.F, OB N et S : le facteur z* lit OBNeta(j) et OBSeta(j) (j = OB_Jn, OB_Js+1) au lieu de l'indice i. Avec des fichiers OB*eta, le facteur utilise la valeur d'un autre point (0 dans nos fichiers) : l'enfant A du cas test perdait 115 m³/s à l'OB sud (−5 cm/cycle). obcs_apply_surf_dr.F est correct. Correctif : copie corrigée dans code/ (gen_enfant.py le fait).
+- **Non hydrostatique.** OB*wFile n'est permis qu'avec nonHydrostatic (obcs_check.F) ; w est imposé dans la cellule OB (obcs_apply_w.F). nonlinFreeSurf ≠ 0 est refusé avec le solveur 3D. Les facteurs implicitNHPress, implicSurfPress, implicDiv2DFlow doivent être non nuls (défaut 1). implicitViscosity ne s'applique pas à w (calc_gw.F) : la viscosité verticale de w, GGL90 compris, est explicite.
+- **WVEL en z*.** C'est la vitesse à travers les surfaces r*. Vitesse vraie : w = w*(1 + η/H) + (1 − z/H)·∂η/∂t (z profondeur de l'interface). L'écart, de l'ordre de Aω ≈ 2e-4 m/s, n'est pas négligeable devant w.
 
 ## Sorties et diagnostics (décidé 2026-09-24)
 - **Fréquences.** 3D toutes les 930 s (48 par cycle), 2D toutes les 360 s (124 par cycle), timePhase = 0. Règle : un multiple de Δt qui divise 44 640 s. Si Δt doit baisser, 15 s garde l'alignement (pas 20 s).
@@ -68,6 +75,25 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
   - La vorticité reproduit momVort3 (écart relatif 2e-7).
 - **Résultats (idéalisés).** EKE/MKE = 0,06 sur le domaine et 0,34 dans l'estuaire. P_h = +0,79 MW, B = +1,2 MW. 28 tourbillons à 400 m, tous verrouillés en phase.
 - **Alerte pour le mini à 200 m.** Les vitesses au seuil d'entrée atteignent ~3,8 m/s dans le cas test, donc le CFL u pourrait monter vers 0,57. Surveiller advcfl ; au besoin, passer à l'advection verticale implicite ou à Δt = 15 s.
+
+## Imbrication parent → enfant (2026-09-24)
+- **Outils.** `imbrication/extraire_obcs.py` (OB*.bin et conditions initiales), `imbrication/comparer.py` (cohérence), `imbrication/enfant_depuis_pipeline.py` (enfant.json depuis s02/s03), `scripts/run_imbrication.sh` (cas test de bout en bout).
+- **Hypothèses.** Grilles cartésiennes uniformes, faces de l'enfant alignées sur celles du parent, même grille verticale. Parent lu par bandes (memmap) ; conditions initiales écrites niveau par niveau.
+- **Méthode.** Interpolation bilinéaire (points secs remplis par le plus proche mouillé), linéaire en temps. Correction de flux par frontière et par enregistrement : vitesse uniforme ajoutée pour que le débit entrant égale celui du parent à travers la même ligne de faces, moins le remplissage des cellules OB. Seules les faces qui alimentent une cellule intérieure sont comptées et corrigées. En z*, fichiers OB*eta et facteur (1 + η_OB/H). Enfant NH : OB*w en vitesse vraie.
+- **Démarrage.** T, S, U, V, η du parent à t0. Les vitesses interpolées ne sont pas à divergence nulle : en NH, CFL w = 2,1 au premier pas seulement, puis comme A.
+- **Cas test (parent 400 m → enfant 200 m, 118×76×32, Δt 15 s, 2 cycles depuis t0 = 44 640 s, fenêtre = 2e cycle).** Extraction : correction ≤ 1,6 % de u rms, bilan de volume à 0,6 % du débit max, surfaces mouillées 108,88 / 108,96 km².
+
+  | Critère | A (z*, hydrostatique) | B (NH, SL linéaire) |
+  | --- | --- | --- |
+  | Amplitude M2 de η | −0,20 % (phase −0,03°) | −0,23 % (phase −0,12°) |
+  | Niveau moyen enfant − parent | −0,0 cm (−7,2 cm sans le correctif du bogue z*) | +0,1 cm |
+  | Débit M2 seuil 2 / entrée | −0,25 % / −0,26 % | −0,26 % / −0,30 % |
+  | Débit moyen seuil 2 / entrée (parent 1192 / 1182 m³/s) | 1194 / 1187 m³/s | 1195 / 1190 m³/s |
+  | Salinité moyenne (rms / étendue) | 2,0 % | 2,0 % |
+  | Coût (1 cœur, 2 cycles) | ~15 min | ~20 min |
+
+- **Limites.** Le cas test à 200 m ne dit rien de la physique non hydrostatique (δ = H/L trop petit) : il valide la chaîne. Parent en z* et enfant B en surface libre linéaire : T, S sont passés niveau par niveau sans remappage vertical (décalage ≤ |η| près de la surface).
+- **Vrai parent 100 m.** Les instantanés 3D complets à 930 s pèsent ~150 Mo par champ ; l'extraction ne lit que des bandes, mais il faudra les stocker (grappe) ou réduire la période de sortie à la durée de l'enfant.
 
 ## Constats bathy
 - Cols (sous NMM) : 23 m à 69,647°O (seuil d'entrée) ; 68 m à 18,3 km ; 126 m à 32,4 km. Bassin intérieur ~270 m.

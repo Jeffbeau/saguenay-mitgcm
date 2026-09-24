@@ -1,0 +1,5 @@
+ &PACKAGES
+ useOBCS = .TRUE.,
+ useGGL90 = .TRUE.,
+ useDiagnostics = .TRUE.,
+ &

@@ -1,0 +1,6 @@
+ &GGL90_PARM01
+ GGL90TKEmin = 1.E-7,
+ GGL90viscMax = 1.0,
+ GGL90diffMax = 1.,
+ mxlMaxFlag = 2,
+ &

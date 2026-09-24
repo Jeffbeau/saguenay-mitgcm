@@ -11,9 +11,10 @@ parametrable (400 m par defaut pour tourner sur 1 coeur).
 Usage :  python3 gen_testcase.py [--dx 400] [--nr 32] [--ncyc 4]
 Ecrit ./code/ et ./input/ a cote du script.
 """
-import argparse, os, textwrap
+import argparse, os, sys, textwrap
 import numpy as np
-from scipy.interpolate import PchipInterpolator
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import geometrie as geo
 
 p = argparse.ArgumentParser()
 p.add_argument("--dx", type=float, default=400.0)
@@ -29,7 +30,7 @@ CODE, INP = os.path.join(HERE, "code"), os.path.join(HERE, "input")
 os.makedirs(CODE, exist_ok=True); os.makedirs(INP, exist_ok=True)
 
 # ----------------------------------------------------------------- constantes
-LX, LY = 37600.0, 21600.0
+LX, LY = geo.LX, geo.LY
 DX = args.dx
 NX, NY, NR = int(round(LX / DX)), int(round(LY / DX)), args.nr
 assert NX % args.nsx == 0, "NX doit etre divisible par nsx"
@@ -46,47 +47,17 @@ OMEGA = 2 * np.pi / T_M2
 assert abs(T_M2 / DT - round(T_M2 / DT)) < 1e-9
 
 # ------------------------------------------------------------ grille verticale
-dz = np.geomspace(1.5, 20.0, NR)
-dz *= 280.0 / dz.sum()
-dz = np.round(dz, 3)
-zf = np.concatenate([[0.0], np.cumsum(dz)])          # faces (positives vers le bas)
-zc = 0.5 * (zf[:-1] + zf[1:])
+dz, zf, zc = geo.niveaux(NR)                          # faces zf positives vers le bas
 
 # --------------------------------------------------------- bathymetrie (m > 0)
 x = (np.arange(NX) + 0.5) * DX
 y = (np.arange(NY) + 0.5) * DX
 X, Y = np.meshgrid(x, y)                              # (NY, NX)
 
-# profil du talweg : noeuds (km, m) ; PCHIP conserve exactement les cols
-xk = np.array([0, 3, 5.0, 7, 13, 16.0, 19, 26, 29.0, 31, 40])
-hk = np.array([250, 250, 124, 200, 190, 68, 120, 110, 23, 60, 150])
-h_axis = PchipInterpolator(xk * 1e3, hk)
-y_axis = lambda xx: 15e3 - 3e3 * (np.clip(xx, 0, 30e3) / 30e3) ** 2
-def half_width(xx):
-    w = np.interp(xx, [0, 20e3, 27e3, 30e3, 40e3], [1000, 1000, 800, 600, 600])
-    return w
-d = np.abs(Y - y_axis(X))
-hw = half_width(X)
-H_f = np.where((d < hw) & (X <= 31.5e3),
-               h_axis(X) * np.clip(1 - (d / hw) ** 2, 0, 1) ** 0.4, 0.0)
-# estuaire : au sud-est d'une rive nord orientee a 40 deg passant par l'embouchure
-th = np.deg2rad(40.0)
-s = -np.sin(th) * (X - 30e3) + np.cos(th) * (Y - 12e3)   # s < 0 : estuaire
-doff = np.clip(-s, 0, None)
-H_e = np.where(s < 0, 15 + 255 * np.tanh(doff / 3e3) ** 1.5, 0.0)
-H = np.maximum(H_f, H_e)
-H = np.where(H < 10.0, 0.0, np.minimum(H, 270.0))
-H[:, 0] = np.where(np.abs(y - y_axis(0)) < half_width(0), H[:, 0], 0.0)
-
-# ----------------------------------------------- hFac comme MITgcm (z-levels)
-def hfac_c(Hc):
-    hf = np.zeros((NR,) + Hc.shape)
-    for k in range(NR):
-        mn = max(HFACMIN, min(HFACMINDR / dz[k], 1.0))
-        t = np.clip((Hc - zf[k]) / dz[k], 0.0, 1.0)
-        t = np.where(t < mn, np.where(t < 0.5 * mn, 0.0, mn), t)
-        hf[k] = t
-    return hf
+H = geo.profondeur(X, Y)
+H[:, 0] = np.where(np.abs(y - geo.y_axis(0)) < geo.half_width(0), H[:, 0], 0.0)
+h_axis = geo.h_axis
+hfac_c = lambda Hc: geo.hfac_c(Hc, dz, HFACMIN, HFACMINDR)
 hC = hfac_c(H)
 wet = hC[0] > 0
 # retirer les points isoles (moins de 2 voisins mouilles) : evite les puits a 1 point
@@ -107,14 +78,8 @@ hS[:, NX - 1] = 0.0            # pas d'OB sud dans la colonne du coin SE (deja O
 A_S = (hS * dz[:, None]).sum() * DX
 
 # ---------------------------------------------------------------- T / S initiaux
-S_f = 30.5 - 22.0 * np.exp(-zc / 4.0)
-T_f = 1.5 + 12.0 * np.exp(-zc / 6.0)
-S_e = 33.8 - 7.5 * np.exp(-zc / 25.0)
-T_e = 4.3 - 3.8 * np.exp(-((zc - 70.0) / 45.0) ** 2) + 2.0 * np.exp(-zc / 10.0)
-w_e = 0.5 * (1 - np.tanh(s / 1.5e3))            # 1 dans l'estuaire, 0 dans le fjord
-w_e[X < 27e3] = 0.0
-T3 = (1 - w_e)[None] * T_f[:, None, None] + w_e[None] * T_e[:, None, None]
-S3 = (1 - w_e)[None] * S_f[:, None, None] + w_e[None] * S_e[:, None, None]
+T_f, S_f, T_e, S_e = geo.profils(zc)
+T3, S3 = geo.ts_initiaux(zc, X, Y)
 vol = hC * dz[:, None, None]
 tRef = (T3 * vol).sum((1, 2)) / np.maximum(vol.sum((1, 2)), 1e-9)
 sRef = (S3 * vol).sum((1, 2)) / np.maximum(vol.sum((1, 2)), 1e-9)

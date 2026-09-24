@@ -21,10 +21,11 @@ Configuration MITgcm (checkpoint69k) haute résolution du fjord du Saguenay : si
 | --- | --- |
 | `docs/decisions.md` | Décisions, état, faits vérifiés |
 | `sagdiag/` | Diagnostics tourbillonnaires (numpy, scipy, matplotlib) |
-| `cas_test/` | Cas test synthétique « mini » : générateur, `code/`, namelists |
+| `cas_test/` | Cas test synthétique « mini » : générateur, `code/`, namelists ; `gen_enfant.py` et `enfant_A/`, `enfant_B/` (imbrication) |
+| `imbrication/` | Extraction parent → enfant (OBCS hors ligne), contrôle de cohérence, enfant.json depuis le pipeline |
 | `resultats_cas_test/` | Résultats de référence du cas test |
 | `pipeline_grille/` | Pipeline grille + bathy + forçage de l'utilisateur (s01..s05) |
-| `scripts/` | Installation de MITgcm, cas test de bout en bout |
+| `scripts/` | Installation de MITgcm, cas test et imbrication de bout en bout |
 
 ## Dans le nuage
 
@@ -36,6 +37,7 @@ Configuration MITgcm (checkpoint69k) haute résolution du fjord du Saguenay : si
   - flux de sel à ±2 % de USLTMASS ;
   - CFL max u 0,29, w 0,39 ;
   - vorticité = momVort3 à 2e-7 près.
+- Puis `bash scripts/run_imbrication.sh A B` (≈ 20 min, 2 cœurs) : enfants 200 m forcés par le parent. Comparer `cas_test/enfant_[AB]/run/diag/imbrication.txt` au tableau « Imbrication » de `docs/decisions.md` (critère < 5 %).
 
 ## Plan (cahier des charges)
 
@@ -56,9 +58,13 @@ Cahier des charges : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3f
 - **Namelists.** Chaque ligne doit commencer par une espace. Une ligne de plus de ~200 caractères est tronquée sans avertissement : utiliser `N*valeur`.
 - **Non hydrostatique.** nonlinFreeSurf ≠ 0 est refusé avec le solveur 3D.
 - **Éponge OBCS.** Elle relaxe U, V, T et S. Urelax s'applique aux OB E/O, Vrelax aux OB N/S.
+- **Bogue z* aux OB N/S.** `obcs_apply_r_star.F` lit OBNeta(j)/OBSeta(j) au lieu de (i). Tout run z* avec fichiers OB*eta et une OB N ou S embarque la copie corrigée (voir `gen_enfant.py`).
+- **Coins OB.** Une face normale au coin de deux frontières peut déboucher sur une cellule OB : elle ne compte pas dans le bilan de l'intérieur.
+- **NH et viscosité.** implicitViscosity ne s'applique pas à w : GGL90viscMax ≤ 0,2·dz_min²/Δt en non hydrostatique. OB*wFile exige nonHydrostatic ; OB*etaFile exige nonlinFreeSurf ≠ 0.
+- **WVEL en z\*.** C'est la vitesse r* : w vraie = w*(1 + η/H) + (1 − z/H)·∂η/∂t.
 
 ## Prochaines tâches
 
-- Script d'extraction parent → enfant (OBCS hors ligne, avec correction de flux par frontière).
+- Enfant NH réel sur la VM : le mini (200 m) sert de parent, enfant à 50 m sur le seuil d'entrée (profil pipeline à ajouter, données NONNA sur la VM), puis `enfant_depuis_pipeline.py` → `extraire_obcs.py`.
 - Adapter `sagdiag/coupes_mini_modele.json` aux vrais seuils du mini.
 - Relancer le mini sur 6 cycles avec `sagdiag/data.diagnostics.mini_recommande`, puis analyser avec `--skip 2`.

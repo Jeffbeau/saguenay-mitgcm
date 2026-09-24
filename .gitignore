@@ -1,0 +1,21 @@
+# Donnees et sorties : jamais dans le depot (voir CLAUDE.md)
+*.bin
+*.data
+*.meta
+*.npz
+*.nc
+*.tif
+*.tiff
+build/
+run/
+runs/
+diag/
+__pycache__/
+*.pyc
+# pipeline grille : donnees NONNA, intermediaires, livrables
+bathy/
+pipeline_grille/work/
+pipeline_grille/output*/
+# journaux d'execution
+*.log
+cas_test/enfant_*/obcs_rapport.txt
