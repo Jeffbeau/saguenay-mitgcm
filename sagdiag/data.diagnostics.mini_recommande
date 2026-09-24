@@ -1,0 +1,47 @@
+# data.diagnostics recommande pour le mini (Nr = 32, dt = 30 s, periode 44 640 s)
+# Regles :
+#  - chaque frequence est un multiple de dt ET divise 44 640 s (930 = 31 pas, 360 = 12 pas),
+#    donc chaque instantane retombe a la meme phase d'un cycle a l'autre ;
+#  - timePhase = 0 pour les instantanes (sinon MITgcm les decale de |freq|/2) ;
+#  - DIAGNOSTICS_SIZE.h : numDiags = 26*Nr (832). Ces listes utilisent 801 niveaux :
+#    une liste avec levels() reserve quand meme Nr niveaux par champ.
+#    Verifier dans STDOUT.0000 : grep "use .* levels" STDOUT.0000
+#  - levels(1:3,2) : indices des niveaux a ~1, ~10 et ~30 m. Les 3 valeurs ci-dessous
+#    sont des EXEMPLES : les remplacer par la sortie de
+#      python3 -c "import sys; sys.path.insert(0,'sagdiag'); import sagdiag as s; s.print_levels('RUNDIR')"
+#  - Volume sur 4 cycles : ~3,5 Go (surtout state3D : 15,6 Mo par instantane).
+ &DIAGNOSTICS_LIST
+ dumpAtLast = .FALSE.,
+# 1. eta instantane, 124 par cycle (controle de maree, animations)
+ fields(1,1) = 'ETAN    ',
+   fileName(1) = 'eta2D',
+   frequency(1) = -360.,
+   timePhase(1) = 0.,
+# 2. niveaux ~1, 10, 30 m, 124 par cycle (detection et suivi des tourbillons)
+ fields(1:3,2) = 'UVEL    ','VVEL    ','momVort3',
+   levels(1:3,2) = 1., 6., 12.,
+   fileName(2) = 'lev2D',
+   frequency(2) = -360.,
+   timePhase(2) = 0.,
+# 3. etat 3D instantane, 48 par cycle (moyenne de phase, EKE, conversions, flux)
+ fields(1:6,3) = 'UVEL    ','VVEL    ','WVEL    ','THETA   ','SALT    ','RHOAnoma',
+   fileName(3) = 'state3D',
+   frequency(3) = -930.,
+   timePhase(3) = 0.,
+# 4. moyennes par cycle : circulation residuelle, variance totale (maree + tourbillons)
+ fields(1:8,4) = 'UVEL    ','VVEL    ','WVEL    ','THETA   ','SALT    ',
+                 'UVELSQ  ','VVELSQ  ','UV_VEL_C',
+   fileName(4) = 'mean3D',
+   frequency(4) = 44640.,
+# 5. transports moyens par cycle (controle du flux de sel total aux seuils)
+ fields(1:6,5) = 'UVELMASS','VVELMASS','WVELMASS','USLTMASS','VSLTMASS','WSLTMASS',
+   fileName(5) = 'flux3D',
+   frequency(5) = 44640.,
+# 6. melange vertical, 48 par cycle
+ fields(1:2,6) = 'GGL90TKE','GGL90Kr ',
+   fileName(6) = 'mix3D',
+   frequency(6) = -930.,
+   timePhase(6) = 0.,
+ &
+ &DIAG_STATIS_PARMS
+ &

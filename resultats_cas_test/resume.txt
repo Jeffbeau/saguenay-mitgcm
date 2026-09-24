@@ -1,0 +1,22 @@
+Run : cas_test/run
+Grille 94x54x32, dx~400 m, dt=30 s, rho0=1025, eponges exclues des integrales : 8 mailles
+Fichiers : 3D=state3D  niveaux2D=lev2D  eta=eta2D  flux=flux3D
+Controle : 97 sorties %MON ; NaN : non
+CFL max : uvel_ 0.285, vvel_ 0.266, wvel_ 0.392
+Maree (eta moyen, cycles analyses) : M2 = 1.553 m, phase = +0.1 deg (0 = sin(wt)), M4 = 0.000 m, moyenne = +0.006 m
+[3D] state3D: 192 instantanes, 48 phases/cycle, 3 cycles analyses
+Energie integree (moyenne sur la maree ; moments d'ordre 2 corriges du biais N/(N-1), N = 3 cycles) :
+  domaine      EKE    9.154 GJ  MKE  157.883 GJ  EKE/MKE 0.058 | P_h  +0.790 MW  P_v  -0.047 MW  B  +1.198 MW
+  seuil3       EKE    0.415 GJ  MKE    4.457 GJ  EKE/MKE 0.093 | P_h  +0.030 MW  P_v  -0.008 MW  B  +0.025 MW
+  seuil2       EKE    0.191 GJ  MKE   12.822 GJ  EKE/MKE 0.015 | P_h  +0.059 MW  P_v  -0.001 MW  B  +0.026 MW
+  embouchure   EKE    0.507 GJ  MKE   62.732 GJ  EKE/MKE 0.008 | P_h  +0.180 MW  P_v  +0.000 MW  B  +0.071 MW
+  estuaire     EKE    2.701 GJ  MKE    7.973 GJ  EKE/MKE 0.339 | P_h  +0.086 MW  P_v  +0.014 MW  B  +0.164 MW
+EKE domaine par cycle (GJ) : cycle 1 = 15.39, cycle 2 = 4.48, cycle 3 = 7.59  (un premier cycle nettement plus fort = derive de mise en route : augmenter --skip)
+Flux moyens sur la maree aux coupes (sel en psu m3/s, Q en m3/s ; positif vers +x ou +y; epaisseur z* incluse) :
+  seuil3       moyenne-phase   +31604.3  tourbillon    +1714.7  total   +33319.0  modele   +33202.9  (Q moyen  +1196.3 m3/s)
+  seuil2       moyenne-phase   +28141.7  tourbillon      +55.1  total   +28196.8  modele   +28206.3  (Q moyen  +1197.7 m3/s)
+  entree       moyenne-phase   +26332.6  tourbillon       +0.2  total   +26332.8  modele   +26773.6  (Q moyen  +1185.8 m3/s)
+[2D] lev2D: 496 instantanes, 124 phases/cycle ; niveau modele 5 (9.5 m) ; taille min 3 dx
+Tourbillons (9.5 m) : 28 detections, 8 trajectoires, 3 cycles ; cycloniques 23, anticycloniques 5
+  duree de vie mediane 0.30 h (max 0.9 h) ; r_eq median 638 m ; part verrouillee en phase (>0,5) : 100%
+Sorties dans cas_test/run/diag

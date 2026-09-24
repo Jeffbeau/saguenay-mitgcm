@@ -1,0 +1,17 @@
+{
+ "_note": "Cas test synthetique (grille cartesienne, m). Regions = boites [x0, x1, y0, y1] ; coupes a x constant (faces u) bornees en y.",
+ "period": 44640,
+ "skip_cycles": 1,
+ "regions": {
+  "domaine":    [-1e12, 1e12, -1e12, 1e12],
+  "seuil3":     [3500, 6500, 12000, 18000],
+  "seuil2":     [14500, 17500, 12000, 18000],
+  "embouchure": [27000, 31500, 9500, 15000],
+  "estuaire":   [31500, 37600, 0, 21600]
+ },
+ "sections": {
+  "seuil3": {"x": 5000,  "y": [13000, 17000]},
+  "seuil2": {"x": 16000, "y": [12500, 16500]},
+  "entree": {"x": 29000, "y": [11300, 13500]}
+ }
+}

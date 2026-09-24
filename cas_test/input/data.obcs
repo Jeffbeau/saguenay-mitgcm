@@ -1,0 +1,18 @@
+ &OBCS_PARM01
+ OB_Iwest = 54*1,
+ OB_Ieast = 54*94,
+ OB_Jsouth = 93*1, 0,
+ useOBCSprescribe = .TRUE.,
+ useOBCSsponge = .TRUE.,
+ useOBCSbalance = .FALSE.,
+ OBWuFile = 'OBWu.bin', OBWtFile = 'OBWt.bin', OBWsFile = 'OBWs.bin',
+ OBEuFile = 'OBEu.bin', OBEtFile = 'OBEt.bin', OBEsFile = 'OBEs.bin',
+ OBSvFile = 'OBSv.bin', OBStFile = 'OBSt.bin', OBSsFile = 'OBSs.bin',
+ &
+ &OBCS_PARM03
+ spongeThickness = 8,
+ Urelaxobcsbound = 1800.,
+ Urelaxobcsinner = 44640.0,
+ Vrelaxobcsbound = 1800.,
+ Vrelaxobcsinner = 44640.0,
+ &
