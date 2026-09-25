@@ -13,7 +13,8 @@ matplotlib, scikit-image). Tous les paramètres sont dans `config.py`.
 
 Profil `SAG_PROFILE=mini` : parent 200 m sur la zone des seuils + enfant 50 m sur le seuil d'entrée
 (`output_mini/`, emprise dans `config.py`). L'enfant sert à la Config B non hydrostatique ; voir le README
-principal (« Enfant 50 m du mini »).
+principal (« Enfant 50 m du mini »). En mini, s01 ne traite que l'emprise du mini (`CROP`) et écrit dans
+`work_mini/`.
 
 Profils : `SAG_PROFILE=full` (défaut ; parent 100 m + enfant 25 m, 60 niveaux → `output/`) ou
 `SAG_PROFILE=lite` (parent 200 m, 32 niveaux, pour tests sur ordinateur personnel → `output_lite/`).

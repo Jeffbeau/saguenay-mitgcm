@@ -33,6 +33,7 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
 - lite : parent 200 m 600×268×32, tout le fjord. Trop lourd pour la VM de 4 Go.
 - **mini** (tests sur la VM) : zone des seuils seule, 200 m, 188×108×32 (650 k points), nPx=2 (mpirun -np 2). OB : O 10 (coupe du fjord à 70,06°O), E 75, S 45. L'OB ouest impose Q = Q_riv − A_amont·dη/dt, avec A_amont = 213 km² (lu sur lite). E/S : (A_mini + A_amont)·dη/dt − Q_riv. Vérifié : η = ±1,60 m. Cols conservés (23,3 / 68,0 / 124,2 m). HMAX 270 m.
 - **Enfant du mini** (2026-09-24, pour la Config B) : 50 m (rapport 4), bbox (−69,760, −69,620, 48,115, 48,170), du bassin extérieur à la tête du chenal Laurentien, autour du seuil d'entrée. Sur une bathymétrie synthétique : 192×112×32 (0,69 M points), faces i = 111..159, j = 18..46 du parent, OB sur les 4 côtés. Emprise de départ à vérifier sur fig_child.png. Δt 5 s ; éponge 1 km. Estimation : ~0,8 Go, 2 cycles NH ≈ 1,5 à 2,5 h sur 2 cœurs.
+- **s01 découpé (mini).** `CROP` dans config.py : s01 ne lit que les tuiles qui touchent l'emprise du mini et découpe la mosaïque (rasterio merge, bounds) ; sortie dans `work_mini/` (les mosaïques de tout le fjord restent dans `work/`). Test synthétique : 2,5x moins de pixels NONNA-10, s01 3x plus rapide.
 - **Alignement.** s02 aligne l'enfant sur les faces du parent (gridlib.make_grid, `align`) : dans le mini, dx parent = 200 m ≠ SNAP = 100 m. Sans effet sur le profil full (dx parent = SNAP).
 - Corrections bathy : voir README.
 

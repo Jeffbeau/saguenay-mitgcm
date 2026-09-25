@@ -19,6 +19,7 @@ NONNA_DIR = Path(__import__("os").environ.get(
 # mini (zone des seuils seule, 200 m : tests rapides sur petite machine)
 PROFILE = __import__("os").environ.get("SAG_PROFILE", "full")
 WORK = HERE / "work"          # intermédiaires partagés (mosaïques NONNA traitées)
+CROP = None                    # (lon0, lon1, lat0, lat1) : s01 ne lit que cette emprise (None = tout)
 OUT = HERE / ("output" if PROFILE == "full" else f"output_{PROFILE}")   # livrables MITgcm
 
 # ---------------------------------------------------------------------------
@@ -194,5 +195,9 @@ if PROFILE == "mini":
     R_MAX_ALLOWED = 1.12
     OB_MIN_SEG = 2
     NPX = 2                    # 2 processus : laisse un cœur libre sur une VM à 3 cœurs
+    # s01 découpe les mosaïques à l'emprise du mini (+ marge) : ~10x moins de pixels NONNA-10.
+    # Mosaïques découpées dans work_mini/ pour ne pas écraser celles de tout le fjord (work/).
+    CROP = (-70.080, -69.530, 48.070, 48.290)
+    WORK = HERE / "work_mini"
     W_OB = "fjord"
     UPSTREAM_AREA_FROM = "lite"

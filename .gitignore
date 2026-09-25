@@ -14,7 +14,7 @@ __pycache__/
 *.pyc
 # pipeline grille : donnees NONNA, intermediaires, livrables
 bathy/
-pipeline_grille/work/
+pipeline_grille/work*/
 pipeline_grille/output*/
 # journaux d'execution
 *.log

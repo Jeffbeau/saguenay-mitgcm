@@ -29,12 +29,23 @@ import config as C
 
 def load_mosaic(pattern):
     files = sorted(glob.glob(str(C.NONNA_DIR / "**" / pattern), recursive=True))
-    if not files:
-        return None
     srcs = [rasterio.open(f) for f in files]
+    if C.CROP is not None:                     # seulement les tuiles qui touchent l'emprise
+        lo0, lo1, la0, la1 = C.CROP
+        keep = [s for s in srcs if s.bounds.right > lo0 and s.bounds.left < lo1
+                and s.bounds.top > la0 and s.bounds.bottom < la1]
+        for s in srcs:
+            if s not in keep:
+                s.close()
+        srcs = keep; files = [s.name for s in srcs]
+    if not srcs:
+        return None
     for s in srcs:
         assert s.crs.to_string() == C.CRS_SRC, (s.name, s.crs)
-    z, tr = merge(srcs, nodata=np.nan)
+    if C.CROP is not None:
+        z, tr = merge(srcs, nodata=np.nan, bounds=(C.CROP[0], C.CROP[2], C.CROP[1], C.CROP[3]))
+    else:
+        z, tr = merge(srcs, nodata=np.nan)
     z = z[0].astype(np.float64)
     z[~np.isfinite(z) | (np.abs(z) > 1e30)] = np.nan
     ny, nx = z.shape
