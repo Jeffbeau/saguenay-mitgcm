@@ -185,12 +185,15 @@ if PROFILE == "lite":
 # ~8x plus léger que « lite » : tient dans < 1 Go, un cycle M2 en quelques minutes.
 # ---------------------------------------------------------------------------
 if PROFILE == "mini":
-    # Enfant 50 m (rapport 4) sur le seuil d'entrée, pour la Config B non hydrostatique :
-    # du bassin extérieur (69,775°O) à la tête du chenal Laurentien (69,63°O). Emprise de départ
-    # à ajuster sur fig_child.png : les OB doivent couper des chenaux nets, loin du seuil.
-    # ~208 x 112 x 32 (0,75 M points) : 2 cycles NH ~ 2-3 h sur 2 cœurs (estimation cas test).
+    # Enfant 50 m (rapport 4) sur le seuil d'entrée (22,9 m, 69,647°O 48,125°N), pour la Config B
+    # non hydrostatique. Emprise en UTM (x0, x1, y0, y1), sur les faces du parent (200 m) :
+    #   O 445,2 km : coupe nette du fjord dans le bassin extérieur ;
+    #   S 5328,0 km : seuil à ~1,9 km du bord (le bord sud du mini est à 5325,8 km ; l'enfant
+    #     reste à >= 10 cellules parent, mais dans l'éponge du parent, qui s'arrête à 5328,8 km) ;
+    #   E 455,6 km : aval du seuil vers le chenal Laurentien (éponge du parent à partir de 456,0).
+    # 208 x 144 x 32 (0,96 M points) : 2 cycles NH ~ 2-3 h sur 2 cœurs, ~1,1 Go (estimation cas test).
     GRIDS = {"parent": dict(dx=200.0, bbox=(-70.060, -69.550, 48.080, 48.280)),
-             "child": dict(dx=50.0, bbox=(-69.760, -69.620, 48.115, 48.170))}
+             "child": dict(dx=50.0, utm=(445200.0, 455600.0, 5328000.0, 5335200.0))}
     NR, NSURF, DZ_SURF = 32, 4, 2.0
     R_MAX_ALLOWED = 1.12
     OB_MIN_SEG = 2

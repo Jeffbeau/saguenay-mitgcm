@@ -30,7 +30,8 @@ def main():
     for name, p in C.GRIDS.items():
         P = grids.get("parent")
         align = (P.x0, P.y0, P.dx) if name == "child" else None     # faces sur celles du parent
-        g = G.make_grid(name, *bbox_to_utm_inner(*p["bbox"]), p["dx"], align=align)
+        box = p["utm"] if "utm" in p else bbox_to_utm_inner(*p["bbox"])   # utm : (x0, x1, y0, y1) en m
+        g = G.make_grid(name, *box, p["dx"], align=align)
         grids[name] = g
         print(f"[02] {g}")
 
