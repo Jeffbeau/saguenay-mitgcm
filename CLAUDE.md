@@ -66,5 +66,5 @@ Cahier des charges : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3f
 ## Prochaines tâches
 
 - Relancer le mini sur 6 cycles avec `sagdiag/data.diagnostics.mini_recommande` (il sert de parent : state3D à 930 s avec WVEL, eta2D à 360 s), puis analyser avec `--skip 2`.
-- Enfant 50 m du mini sur la VM (profil mini de `config.py`) : vérifier l'emprise sur `fig_child.png`, puis B (non hydrostatique) et A (hydrostatique) depuis t0 = 89 280 s ; procédure dans le README (« Enfant 50 m du mini »). Critère < 5 %, puis comparer A et B au seuil d'entrée.
+- Enfant 50 m du mini sur la VM, centré sur le 2e seuil (Sacré-Cœur) : vérifier l'emprise sur `fig_child.png`, puis B (non hydrostatique) et A (hydrostatique) depuis t0 = 89 280 s ; procédure dans le README (« Enfant 50 m du mini »). Critère < 5 %, puis comparer A et B au seuil d'entrée.
 - Adapter `sagdiag/coupes_mini_modele.json` aux vrais seuils du mini.

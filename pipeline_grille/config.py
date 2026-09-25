@@ -190,15 +190,14 @@ if PROFILE == "lite":
 # ~8x plus léger que « lite » : tient dans < 1 Go, un cycle M2 en quelques minutes.
 # ---------------------------------------------------------------------------
 if PROFILE == "mini":
-    # Enfant 50 m (rapport 4) sur le seuil d'entrée (22,9 m, 69,647°O 48,125°N), pour la Config B
-    # non hydrostatique. Emprise en UTM (x0, x1, y0, y1), sur les faces du parent (200 m) :
-    #   O 445,2 km : coupe nette du fjord dans le bassin extérieur ;
-    #   S 5328,0 km : seuil à ~1,9 km du bord (le bord sud du mini est à 5325,8 km ; l'enfant
-    #     reste à >= 10 cellules parent, mais dans l'éponge du parent, qui s'arrête à 5328,8 km) ;
-    #   E 455,6 km : aval du seuil vers le chenal Laurentien (éponge du parent à partir de 456,0).
-    # 208 x 144 x 32 (0,96 M points) : 2 cycles NH ~ 2-3 h sur 2 cœurs, ~1,1 Go (estimation cas test).
+    # Enfant 50 m (rapport 4) centré sur le 2e seuil (col ~68 m au large d'Anse-de-Roche,
+    # Sacré-Cœur : 69,856°O 48,178°N, x ≈ 436,1 km, y ≈ 5336,3 km), pour la Config B non hydrostatique.
+    # Emprise UTM (x0, x1, y0, y1), sur les faces du parent (200 m), multiples de 800 m :
+    #   col à 3,7 km (O), 4,3 km (E), 4,7 km (S), 4,9 km (N) des bords ; le fjord y tourne du
+    #   nord-sud (OB N attendue) à l'est-ouest (OB E attendue). À vérifier sur fig_child.png.
+    # 160 x 192 x 32 (0,98 M points) : 2 cycles NH ~ 2-3 h sur 2 cœurs, ~1,1 Go (estimation cas test).
     GRIDS = {"parent": dict(dx=200.0, bbox=(-70.060, -69.550, 48.080, 48.280)),
-             "child": dict(dx=50.0, utm=(445200.0, 455600.0, 5328000.0, 5335200.0))}
+             "child": dict(dx=50.0, utm=(432400.0, 440400.0, 5331600.0, 5341200.0))}
     NR, NSURF, DZ_SURF = 32, 4, 2.0
     R_MAX_ALLOWED = 1.12
     OB_MIN_SEG = 2
