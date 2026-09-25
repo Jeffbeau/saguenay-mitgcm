@@ -20,6 +20,7 @@ Sortie : <OUT>/parent/run/{input,code}/ + README_run.md + fig_forcing.png
 """
 import json
 import shutil
+from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -45,9 +46,26 @@ def ob_faces(hfac, wet):
 
 
 def ramp(t, tr):
-    r = np.where(t < tr, 0.5 * (1 - np.cos(np.pi * t / tr)), 1.0)
-    dr = np.where(t < tr, 0.5 * np.pi / tr * np.sin(np.pi * t / tr), 0.0)
+    r = np.where(t <= 0, 0.0, np.where(t < tr, 0.5 * (1 - np.cos(np.pi * t / tr)), 1.0))
+    dr = np.where((t > 0) & (t < tr), 0.5 * np.pi / tr * np.sin(np.pi * t / tr), 0.0)
     return r, dr
+
+
+def mitgcm_root():
+    import os
+    return Path(os.environ.get("MITGCM_ROOT", Path.home() / "MITgcm"))
+
+
+def option_file(name, src, subs):
+    """templates/<name> s'il existe, sinon copie des options du source MITgcm avec substitutions."""
+    t = C.HERE / "templates" / name
+    if t.exists():
+        return t.read_text()
+    txt = (mitgcm_root() / src).read_text()
+    for a, b in subs:
+        assert a in txt, (src, a)
+        txt = txt.replace(a, b)
+    return txt
 
 
 def fmt_list(v, per=5, f="{:.4f}"):
@@ -82,15 +100,23 @@ def main():
     # à travers l'OB ouest ; lue sur la grille d'un autre profil (parent entier)
     A_up = 0.0
     if river_edges and C.W_OB == "fjord":
-        up = np.load(C.HERE / f"output_{C.UPSTREAM_AREA_FROM}" / "parent" / "grid.npz")
-        xu = up["xc"]; dxu = float(xu[1] - xu[0])
-        A_up = float((up["wet"][:, xu < P.x0]).sum() * dxu * dxu)
-        print(f"[05] OB ouest = coupe du fjord ; aire amont = {A_up/1e6:.0f} km² (profil {C.UPSTREAM_AREA_FROM})")
+        fup = C.HERE / f"output_{C.UPSTREAM_AREA_FROM}" / "parent" / "grid.npz"
+        if fup.exists():
+            up = np.load(fup)
+            xu = up["xc"]; dxu = float(xu[1] - xu[0])
+            A_up = float((up["wet"][:, xu < P.x0]).sum() * dxu * dxu)
+            src = f"profil {C.UPSTREAM_AREA_FROM}"
+        else:
+            A_up = C.UPSTREAM_AREA_DEFAULT; src = "valeur par défaut, output_lite absent"
+        print(f"[05] OB ouest = coupe du fjord ; aire amont = {A_up/1e6:.0f} km² ({src})")
 
     # ---------------- séries temporelles
-    ncyc_files = C.N_CYCLES + 1                   # un cycle de marge (pas de bouclage parasite)
-    nt = ncyc_files * C.REC_PER_CYCLE
-    t = (np.arange(nt) + 0.5) * per
+    # Enregistrement n (1..N) à t = (n - 1/2)·P ; N = durée/P + 1 (suite logique), puis l'état
+    # avant le départ (t = -P/2, rivière seule) : pour 0 <= t < P/2, MITgcm interpole entre le
+    # dernier enregistrement et le premier. externForcingCycle = nt·P > durée + P/2.
+    nrun = C.N_CYCLES * C.REC_PER_CYCLE
+    t = np.r_[(np.arange(nrun + 1) + 0.5) * per, -0.5 * per]
+    nt = t.size
     w = 2 * np.pi / C.T_M2
     r, dr = ramp(t, C.RAMP_CYCLES * C.T_M2)
     eta = C.TIDE_AMP * r * np.sin(w * t)
@@ -227,8 +253,9 @@ def main():
  chkptFreq = 0.,
  dumpFreq = 0.,
  monitorFreq = {per:.1f},
+ periodicExternalForcing = .TRUE.,
  externForcingPeriod = {per:.1f},
- externForcingCycle = {ncyc_files * C.T_M2:.1f},
+ externForcingCycle = {nt * per:.1f},
  &
 
  {parm04.strip()}
@@ -250,29 +277,47 @@ def main():
  mxlMaxFlag = 2,
  &
 """)
-    lev = ", ".join(f"{k+1}." for k in range(nr))
-    snap3d = 6 * per
-    (inp / "data.diagnostics").write_text(f"""# data.diagnostics — généré par s05_forcing.py
+    # Sorties = sagdiag/data.diagnostics.mini_recommande : fréquences multiples de dt qui divisent
+    # T_M2 (930 et 360 s), instantanés sans décalage (timePhase = 0). state3D (avec WVEL) et eta2D
+    # servent aussi à forcer l'enfant (imbrication/extraire_obcs.py).
+    for f in (930.0, 360.0):
+        assert abs(f / dt - round(f / dt)) < 1e-9 and abs(C.T_M2 / f - round(C.T_M2 / f)) < 1e-9
+    lv = [int(np.argmin(np.abs(zc - z))) + 1 for z in (1.0, 10.0, 30.0)]
+    (inp / "data.diagnostics").write_text(f"""# data.diagnostics — généré par s05_forcing.py (= sagdiag/data.diagnostics.mini_recommande)
  &DIAGNOSTICS_LIST
-# 1) surface + élévation, toutes les {per:.0f} s (phase de marée résolue, 24 / cycle)
- frequency(1) = -{per:.1f},
- fields(1:4,1) = 'ETAN    ','UVEL    ','VVEL    ','SALT    ',
- levels(1,1) = 1.,
- filename(1) = 'surf',
-# 2) instantanés 3D toutes les {snap3d:.0f} s (4 par cycle)
- frequency(2) = -{snap3d:.1f},
- fields(1:5,2) = 'UVEL    ','VVEL    ','WVEL    ','THETA   ','SALT    ',
- filename(2) = 'snap3d',
-# 3) moyennes sur un cycle M2 (base de la moyenne de phase)
- frequency(3) = {C.T_M2:.1f},
- fields(1:5,3) = 'ETAN    ','UVEL    ','VVEL    ','THETA   ','SALT    ',
- filename(3) = 'avgM2',
+ dumpAtLast = .FALSE.,
+# 1. eta instantané, 124 par cycle
+ fields(1,1) = 'ETAN    ',
+   fileName(1) = 'eta2D',
+   frequency(1) = -360.,
+   timePhase(1) = 0.,
+# 2. niveaux ~1, 10, 30 m, 124 par cycle (tourbillons)
+ fields(1:3,2) = 'UVEL    ','VVEL    ','momVort3',
+   levels(1:3,2) = {lv[0]}., {lv[1]}., {lv[2]}.,
+   fileName(2) = 'lev2D',
+   frequency(2) = -360.,
+   timePhase(2) = 0.,
+# 3. état 3D instantané, 48 par cycle (moyenne de phase, énergétique, forçage de l'enfant)
+ fields(1:6,3) = 'UVEL    ','VVEL    ','WVEL    ','THETA   ','SALT    ','RHOAnoma',
+   fileName(3) = 'state3D',
+   frequency(3) = -930.,
+   timePhase(3) = 0.,
+# 4. moyennes par cycle
+ fields(1:8,4) = 'UVEL    ','VVEL    ','WVEL    ','THETA   ','SALT    ',
+                 'UVELSQ  ','VVELSQ  ','UV_VEL_C',
+   fileName(4) = 'mean3D',
+   frequency(4) = {C.T_M2:.1f},
+# 5. transports moyens par cycle (flux de sel aux seuils)
+ fields(1:6,5) = 'UVELMASS','VVELMASS','WVELMASS','USLTMASS','VSLTMASS','WSLTMASS',
+   fileName(5) = 'flux3D',
+   frequency(5) = {C.T_M2:.1f},
+# 6. mélange vertical, 48 par cycle
+ fields(1:2,6) = 'GGL90TKE','GGL90Kr ',
+   fileName(6) = 'mix3D',
+   frequency(6) = -930.,
+   timePhase(6) = 0.,
  &
-
  &DIAG_STATIS_PARMS
- stat_freq(1) = {per:.1f},
- stat_fields(1:4,1) = 'ETAN    ','UVEL    ','VVEL    ','WVEL    ',
- stat_fName(1) = 'dstat',
  &
 """)
     (inp / "eedata").write_text(""" &EEPARMS
@@ -284,8 +329,10 @@ def main():
 """)
     # ---------------- code/
     shutil.copy(od / "SIZE.h", code / "SIZE.h")
-    shutil.copy(C.HERE / "templates" / "CPP_OPTIONS.h", code / "CPP_OPTIONS.h")
-    shutil.copy(C.HERE / "templates" / "OBCS_OPTIONS.h", code / "OBCS_OPTIONS.h")
+    (code / "CPP_OPTIONS.h").write_text(option_file(
+        "CPP_OPTIONS.h", "model/inc/CPP_OPTIONS.h", [("#undef NONLIN_FRSURF", "#define NONLIN_FRSURF")]))
+    (code / "OBCS_OPTIONS.h").write_text(option_file(
+        "OBCS_OPTIONS.h", "pkg/obcs/OBCS_OPTIONS.h", [("#undef ALLOW_OBCS_SPONGE", "#define ALLOW_OBCS_SPONGE")]))
     (code / "packages.conf").write_text("gfd\nobcs\nggl90\ndiagnostics\n")
     (code / "DIAGNOSTICS_SIZE.h").write_text(f"""C     DIAGNOSTICS_SIZE.h — généré par s05_forcing.py
       INTEGER    ndiagMax
@@ -295,7 +342,7 @@ def main():
       INTEGER    diagSt_size
       PARAMETER( ndiagMax = 500 )
       PARAMETER( numlists = 10, numperlist = 50, numLevels=2*Nr )
-      PARAMETER( numDiags = 16*Nr )
+      PARAMETER( numDiags = 26*Nr )
       PARAMETER( nRegions = 0 , sizRegMsk = 1 , nStats = 4 )
       PARAMETER( diagSt_size = 10*Nr )
 """)
@@ -314,10 +361,10 @@ def main():
     ax[0].set_xlabel("°C"); ax[0].set_ylabel("z (m)"); ax[0].legend()
     ax[1].plot(Sf, -zc, label="S fjord"); ax[1].plot(Se, -zc, "--", label="S estuaire")
     ax[1].set_xlabel("S"); ax[1].legend()
-    ax[2].plot(t / 3600, eta, label="η visé (m)")
-    ax[2].plot(t / 3600, U_tide * 10, label="U normal OB estuaire ×10 (m/s)")
+    ax[2].plot(t[:-1] / 3600, eta[:-1], label="η visé (m)")
+    ax[2].plot(t[:-1] / 3600, U_tide[:-1] * 10, label="U normal OB estuaire ×10 (m/s)")
     if river_edges:
-        ax[2].plot(t / 3600, U_riv, label="U OB ouest (m/s)")
+        ax[2].plot(t[:-1] / 3600, U_riv[:-1], label="U OB ouest (m/s)")
     ax[2].axvline(C.N_CYCLES * C.T_M2 / 3600, color="k", lw=.8, ls=":")
     ax[2].set_xlabel("t (h)"); ax[2].legend(fontsize=8)
     fig.tight_layout(); fig.savefig(run / "fig_forcing.png", dpi=100); plt.close(fig)
@@ -355,8 +402,8 @@ mpirun -np <nPx*nPy> ./mitgcmuv > output.txt
 - `grep advcfl output.txt` : CFL horizontal (< 0,5) et vertical `advcfl_W_hf_max` (< 1).
   Si W dépasse, baisser deltaT (diviseur de {info['externForcingPeriod']:.0f} s : 15, 12, 10…).
 - `%MON dynstat_eta_max/min` : doit osciller à ± {C.TIDE_AMP} m après la rampe.
-- Sorties : `surf.*` (24/cycle), `snap3d.*` (4/cycle, {info['volume_3D_Mo_par_champ']:.0f} Mo par champ 3D),
-  `avgM2.*` (moyenne par cycle).
+- Sorties : `eta2D.*`, `lev2D.*` (124/cycle), `state3D.*`, `mix3D.*` (48/cycle,
+  {info['volume_3D_Mo_par_champ']:.0f} Mo par champ 3D), `mean3D.*`, `flux3D.*` (moyennes par cycle).
 """)
 
 

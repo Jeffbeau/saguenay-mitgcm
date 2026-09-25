@@ -204,3 +204,6 @@ if PROFILE == "mini":
     WORK = HERE / "work_mini"
     W_OB = "fjord"
     UPSTREAM_AREA_FROM = "lite"
+    UPSTREAM_AREA_DEFAULT = 213e6   # m² (lu sur lite le 2026-09-24) si output_lite/ est absent
+    N_CYCLES = 6               # parent de l'enfant 50 m : t0 = 2 cycles + 2 cycles d'enfant + marge ;
+                               #   6 cycles aussi pour sagdiag (--skip 2)
