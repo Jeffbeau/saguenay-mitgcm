@@ -111,6 +111,11 @@ W_OB = "river"                 # frontière ouest : "river" (débit Q_RIVER) ou 
                                #   flux de marée du fjord amont + rivière)
 UPSTREAM_AREA_FROM = None      # profil dont on lit l'aire du fjord en amont de la coupe ouest
 OB_MIN_SEG = 4                 # segment de frontière ouverte plus court (cellules) -> fermé
+OB_EXTRUDE = 4                 # parent : bande (cellules) le long de chaque OB où masque et H sont
+                               #   recopiés perpendiculairement au bord depuis l'intérieur. Supprime les
+                               #   poches collées aux OB (mini, 2026-09-25 : poche à i=186 près de l'OB E,
+                               #   η ±3,6 m puis colonne vide -> arrêt CALC_R_STAR). Dans l'éponge.
+H_OB_MIN = 10.0                # m : profondeur minimale dans cette bande
 MAX_LAND_NEIGH = 3             # cellule mouillée avec >= 3 voisins terre (4-conn) -> terre (itéré)
 HFAC_MIN = 0.2                 # identiques à data/PARM01
 HFAC_MIN_DR = 0.5

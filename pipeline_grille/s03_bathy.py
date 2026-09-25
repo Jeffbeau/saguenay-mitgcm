@@ -93,6 +93,32 @@ def clean_mask(wet, H, closed, log):
     return wet
 
 
+def extrude_ob(wet, H, closed, log):
+    """Bande de OB_EXTRUDE cellules le long des bords ouverts : masque et profondeur recopiés
+    depuis la ligne intérieure (fond « droit » perpendiculaire à l'OB), H >= H_OB_MIN.
+    Évite les poches et hauts-fonds collés aux OB, où la vitesse imposée empile l'eau."""
+    n = C.OB_EXTRUDE
+    if n <= 0:
+        return wet, H
+    wet, H = wet.copy(), H.copy()
+    band = np.zeros(wet.shape, bool)
+    for e in EDGES:
+        if e in closed or not wet[edge_slices(e)].any():
+            continue
+        if e == "W":
+            wet[:, :n] = wet[:, n:n + 1]; H[:, :n] = H[:, n:n + 1]; band[:, :n] = True
+        elif e == "E":
+            wet[:, -n:] = wet[:, -n - 1:-n]; H[:, -n:] = H[:, -n - 1:-n]; band[:, -n:] = True
+        elif e == "S":
+            wet[:n, :] = wet[n:n + 1, :]; H[:n, :] = H[n:n + 1, :]; band[:n, :] = True
+        else:
+            wet[-n:, :] = wet[-n - 1:-n, :]; H[-n:, :] = H[-n - 1:-n, :]; band[-n:, :] = True
+    deep = band & wet & (H < C.H_OB_MIN)
+    H = np.where(deep, C.H_OB_MIN, H)
+    log["ob_band_cells"] = int((band & wet).sum()); log["ob_band_deepened"] = int(deep.sum())
+    return wet, H
+
+
 def open_boundaries(wet, closed):
     ob = {}
     for e in EDGES:
@@ -228,6 +254,13 @@ def process(g, prods, dz, parent=None, nest=None):
             wet &= ~small
             log["child_small_components_removed_cells"] = int(small.sum())
 
+    if parent is None:                     # l'enfant a déjà la bande copiée du parent
+        wet, H = extrude_ob(wet, H, closed, log)
+        seeds = np.zeros_like(wet)
+        for e in EDGES:
+            if e not in closed:
+                seeds[edge_slices(e)] = True
+        wet, _ = G.keep_connected(wet, seeds)
     # cellule de terre isolée (4 voisins mouillés) = artefact de raccord -> eau
     lonely = ~wet & (G.land_neighbours(wet) == 0)
     if lonely.any():
