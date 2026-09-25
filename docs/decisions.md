@@ -13,6 +13,7 @@ Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-
 - Dossier partagé VirtualBox : /media/sf_MITGCM (Additions invité installées, groupe vboxsf). Runs copiés dans ~/runs/.
 - Le profil lite (5 M points) a été tué par manque de mémoire (OOM) sur 3 processus, d'où la création du profil mini.
 - Pas d'Ubuntu/WSL sur le poste du travail.
+- Python sur la VM : dans un venv (Ubuntu 24.04 refuse pip dans le Python système ; un NumPy 2 installé par pip à côté de rasterio d'apt casse l'import). setup_mitgcm.sh n'utilise plus pip hors venv.
 
 ## Décisions
 - Imbrication unidirectionnelle hors ligne via OBCS : un parent à 100 m sur tout le fjord et un bout de l'estuaire, un enfant à 25 m sur la zone des seuils.
