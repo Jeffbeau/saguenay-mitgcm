@@ -177,3 +177,23 @@ Le script étudie ensemble le seuil et le tourbillon de la pointe. Il trace le t
 Froude interne = \|U moyen\| / c₁, avec c₁ = (1/π)∫N dz (onde interne du mode 1). La pointe est le maximum de \|ζ\| moyen hors de la zone du col ; `--pointe X Y` (m, repère du run) ou `--pointe-lonlat LON LAT` la fixe, `--rayon-pointe` règle la zone (1 500 m). En z*, WVEL de A est la vitesse r* ; l'écart avec w vraie (~Aω ≈ 2e-4 m/s) est petit devant w au seuil.
 
 À surveiller : `obcs_rapport.txt` (correction de flux de quelques %, bilan de volume < 1 %), le CFL dans `STDOUT.0000` (au premier pas, les vitesses interpolées ne sont pas à divergence nulle), puis `run/diag/imbrication.txt`. `comparer.py` ne compare les débits qu'aux coupes du fichier `--config` situées dans l'enfant, en mètres dans le repère du modèle.
+
+## Enfants 25 m (profil `mini25`)
+
+Deux zones, imbriquées dans l'enfant 50 m v3 (rapport 2) : `seuil` (ressaut de jusant, aval du 2e seuil) et `cap` (tourbillon de surface au cap de la Pointe-aux-Crêpes). Le parent est le run 50 m v3 (`~/runs/enfantA_v3`, 3,1 cycles) ; l'enfant 25 m part de t0 = 44 640 s dans le temps de ce run et dure 2 cycles. A et B sont forcés par le même parent : seule la physique diffère.
+
+```bash
+Z=cap                                         # ou seuil
+cd ~/saguenay-mitgcm/pipeline_grille
+for s in s02_grids s03_bathy s04_verify; do SAG_PROFILE=mini25 SAG_ZONE=$Z python3 $s.py; done
+cd ~/saguenay-mitgcm
+P=~/runs/enfantA_v3/run
+for c in B A; do
+  opt=""; [ $c = B ] && opt="--nh"
+  python3 imbrication/enfant_depuis_pipeline.py pipeline_grille/output_mini25_$Z ~/runs/p25_${Z}_$c \
+      --parent $P --t0 44640 --cycles 2 --npx 2 --eponge 500 $opt
+  python3 imbrication/extraire_obcs.py $P ~/runs/p25_${Z}_$c | tail -4
+done
+```
+
+Puis, pour chaque run, compilation `genmake2 -mpi`, essai court et `nohup mpirun -np 2` comme pour l'enfant 50 m. Analyse : `comparer.py` (parent = run 50 m) et `seuil_nh.py` A contre B, `--niveau 0` pour la surface au cap.
