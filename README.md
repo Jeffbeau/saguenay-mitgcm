@@ -155,7 +155,7 @@ python3 imbrication/extraire_obcs.py ~/runs/mini ~/runs/enfantB
 cd ~/runs/enfantB && mkdir -p build run && cd build
 ~/MITgcm/tools/genmake2 -mpi -rootdir=$HOME/MITgcm -mods=../code && make depend && make -j3
 cd ../run && ln -sf ../input/* . && ln -sf ../build/mitgcmuv . && mpirun -np 2 ./mitgcmuv > output.txt
-cd ~/saguenay-mitgcm && python3 imbrication/comparer.py ~/runs/mini ~/runs/enfantB
+cd ~/saguenay-mitgcm && python3 imbrication/comparer.py ~/runs/mini ~/runs/enfantB   # --config coupes.json pour les débits
 ```
 
 Pour la Config A (hydrostatique, même grille), reprendre sans `--nh` dans `~/runs/enfantA`. Comparer A et B au seuil isole l'effet non hydrostatique :

@@ -96,7 +96,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("parent"); ap.add_argument("enfant")
     ap.add_argument("--run", default="run", help="sous-dossier du run de l'enfant")
-    ap.add_argument("--config", default=os.path.join(os.path.dirname(__file__), "..", "sagdiag", "coupes_test.json"))
+    ap.add_argument("--config", default=None, help="coupes (x constant, m, repere du parent) ; sans : pas de debits")
     ap.add_argument("--skip", type=float, default=1.0, help="cycles de l'enfant ignores (ajustement)")
     a = ap.parse_args()
 
@@ -140,7 +140,7 @@ def main():
                  f"({100 * biais / Aps.mean():+.2f} % de A)")
 
     # --- 2. debits aux coupes situees dans l'enfant
-    cfg = json.load(open(a.config))
+    cfg = json.load(open(a.config)) if a.config else {}
     xe0, xe1 = x0 + nsp * r * gc.dx_mean, x0 + gc.nx * gc.dx_mean - nsp * r * gc.dx_mean
     secp, secc = [], []
     for k, s in cfg.get("sections", {}).items():
@@ -152,6 +152,9 @@ def main():
         qp = debits(rp, gp, pre_p[0], pre_p[2], secp, t_lo, t_hi, 0.0, zp)
         qc = debits(rc, gc, pre_c[0], pre_c[2], secc, t_lo, t_hi, t0, zc)
         for k in qp:
+            if qp[k]["M2"] < 1.0:                  # coupe seche ou hors du chenal
+                lines.append(f"Debit {k:8s}: coupe sans debit dans le parent, ignoree")
+                continue
             e2 = (qc[k]["M2"] - qp[k]["M2"]) / qp[k]["M2"]
             res["debits"][k] = dict(parent=qp[k], enfant=qc[k], ecart_M2=float(e2))
             lines.append(f"Debit {k:8s}: M2 parent {qp[k]['M2']:8.0f}, enfant {qc[k]['M2']:8.0f} m3/s -> "

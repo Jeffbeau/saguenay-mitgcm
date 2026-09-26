@@ -95,7 +95,7 @@ def main():
     pre = a.state3d or sd.guess_prefixes(sd.scan_run(runs[0]), g.nz)[0]
     its = np.array(sd.list_iters(runs[0], pre)); t = its * g.dt
     dts = t[1] - t[0]                                  # la sortie finale peut manquer
-    tfin = math.floor((t[-1] + dts) / T_M2 + 1e-9) * T_M2
+    tfin = math.floor((t[-1] + dts) / T_M2 + 0.05) * T_M2   # cycle complet a 95 % accepte
     sel = (t >= tfin - T_M2 - 1e-6) & (t < tfin - 1e-6)
     its, t = its[sel], t[sel]
     phases = its[::max(1, len(its) // 8)][:8]

@@ -23,7 +23,7 @@ run_enfant() {
   (cd "$d/run" && rm -rf ./*.data ./*.meta output.txt diag && ln -sf ../input/* . && ln -sf ../build/mitgcmuv . \
      && ./mitgcmuv > output.txt 2>&1)
   grep -q "Execution ended Normally" "$d/run/output.txt" || { echo "Echec du run $c : $d/run/output.txt" >&2; return 1; }
-  python3 imbrication/comparer.py cas_test/run "$d" > "$d/comparaison.log"
+  python3 imbrication/comparer.py cas_test/run "$d" --config sagdiag/coupes_test.json > "$d/comparaison.log"
   echo "== Enfant $c"; cat "$d/extraction.log"; echo; cat "$d/run/diag/imbrication.txt"
 }
 
