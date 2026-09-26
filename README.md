@@ -174,6 +174,6 @@ Le script étudie ensemble le seuil et le tourbillon de la pointe. Il trace le t
 | `fig_seuil_pointe.png` | Froude interne au col, w au col et circulation du tourbillon sur le cycle |
 | `seuil_nh.txt` | Rapports B/A, Froude (max, part du cycle supercritique), tourbillon (circulation, aire, Ro), déphasage Froude → tourbillon |
 
-Froude interne = \|U moyen\| / c₁, avec c₁ = (1/π)∫N dz (onde interne du mode 1). La pointe est le maximum de \|ζ\| moyen hors de la zone du col ; `--pointe X Y` (m, repère du run) la fixe, `--rayon-pointe` règle la zone (1 500 m). En z*, WVEL de A est la vitesse r* ; l'écart avec w vraie (~Aω ≈ 2e-4 m/s) est petit devant w au seuil.
+Froude interne = \|U moyen\| / c₁, avec c₁ = (1/π)∫N dz (onde interne du mode 1). La pointe est le maximum de \|ζ\| moyen hors de la zone du col ; `--pointe X Y` (m, repère du run) ou `--pointe-lonlat LON LAT` la fixe, `--rayon-pointe` règle la zone (1 500 m). En z*, WVEL de A est la vitesse r* ; l'écart avec w vraie (~Aω ≈ 2e-4 m/s) est petit devant w au seuil.
 
 À surveiller : `obcs_rapport.txt` (correction de flux de quelques %, bilan de volume < 1 %), le CFL dans `STDOUT.0000` (au premier pas, les vitesses interpolées ne sont pas à divergence nulle), puis `run/diag/imbrication.txt`. `comparer.py` ne compare les débits qu'aux coupes du fichier `--config` situées dans l'enfant, en mètres dans le repère du modèle.

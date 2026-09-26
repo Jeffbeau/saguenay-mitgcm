@@ -73,6 +73,17 @@ def froude(u3, v3, rho, g, j, i, tx, ty):
     return abs(Um) / max(c1, 1e-3), Um, c1, float(U[0])
 
 
+def lonlat_vers_run(lon, lat, run, pipeline):
+    """lon/lat -> x, y (m) dans le repere du run enfant : UTM 19N - origine du parent (grids.npz)
+    - coin de l'enfant dans le parent (enfant.json, a cote du dossier run)."""
+    import json
+    from pyproj import Transformer
+    x, y = Transformer.from_crs("EPSG:4326", "EPSG:32619", always_xy=True).transform(lon, lat)
+    gr = np.load(os.path.join(pipeline, "grids.npz"))
+    c = json.load(open(os.path.join(run, "..", "enfant.json")))
+    return x - float(gr["parent_x0"]) - c["x0"], y - float(gr["parent_y0"]) - c["y0"]
+
+
 def lire(run, prefix, it, noms):
     d, _ = sd.read_fields(os.path.join(run, f"{prefix}.{it:010d}"))
     return [np.asarray(d[n], np.float64) for n in noms]
@@ -87,6 +98,11 @@ def main():
     ap.add_argument("--rayon", type=float, default=1000.0, help="demi-longueur de la zone du seuil (m)")
     ap.add_argument("--state3d", default=None)
     ap.add_argument("--pointe", nargs=2, type=float, help="centre du tourbillon de pointe (x y, m)")
+    ap.add_argument("--pointe-lonlat", nargs=2, type=float, metavar=("LON", "LAT"),
+                    help="centre du tourbillon en degres (converti avec --pipeline et enfant.json)")
+    ap.add_argument("--pipeline", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                                                       "pipeline_grille", "output_mini"),
+                    help="sortie du pipeline (grids.npz : origine UTM du parent)")
     ap.add_argument("--rayon-pointe", type=float, default=1500.0, help="rayon de la zone de la pointe (m)")
     ap.add_argument("--niveau", type=int, default=1, help="niveau de la liste 2D (0, 1, 2 : ~1, 10, 30 m)")
     a = ap.parse_args()
@@ -202,7 +218,9 @@ def main():
             kin = sd.kinematics(u, v, g, wet2)
             return kin["zeta_c"], kin["ow"]
         dcol = np.hypot(g.XC - xs[ks], g.YC - ys[ks])
-        if a.pointe:
+        if a.pointe_lonlat:
+            xp, yp = lonlat_vers_run(*a.pointe_lonlat, runs[-1], a.pipeline)
+        elif a.pointe:
             xp, yp = a.pointe
         else:                                   # max de |zeta| moyen, hors de la zone du col
             acc = np.zeros(wet2.shape)
@@ -265,7 +283,7 @@ def main():
                 ax[0].plot(ph, res[nm]["G"], label=nm)
             ax[1].plot(ph, np.array(res[nm]["wrms"]) * 1e3, label=nm)
             ax[2].plot(ph2, np.array(edd[nm]["gam"]) / 1e3, label=nm)
-            if res[nm]["G"]:
+            if res[nm]["G"] and np.ptp(edd[nm]["gam"]) > 0:     # pas de tourbillon : pas de correlation
                 Gi = np.interp(t2, t, np.nan_to_num(res[nm]["G"]))
                 gm = np.abs(edd[nm]["gam"])
                 cor = [np.corrcoef(Gi, np.roll(gm, -L))[0, 1] for L in range(len(gm))]
@@ -300,6 +318,9 @@ def main():
         lines.append(f"Pointe : x={xp:.0f} y={yp:.0f} m, rayon {a.rayon_pointe:.0f} m, niveau {-g.RC[kmod]:.0f} m")
         for nm in noms:
             gam = np.array(edd[nm]["gam"]); k = int(np.argmax(np.abs(gam)))
+            if not np.any(gam):
+                lines.append(f"{nm:24s}: aucun coeur de tourbillon dans le disque de la pointe")
+                continue
             lines.append(f"{nm:24s}: tourbillon {'cyclonique' if gam[k] > 0 else 'anticyclonique'}, circulation max "
                          f"{gam[k] / 1e3:+.1f}e3 m2/s (phase {ph2[k]:.0f}°), aire max {max(edd[nm]['aire']) / 1e6:.2f} km2, "
                          f"|Ro| (90e centile du coeur) max {max(edd[nm]['ro']):.2f}"
