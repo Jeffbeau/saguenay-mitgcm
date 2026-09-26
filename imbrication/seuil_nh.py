@@ -127,13 +127,15 @@ def main():
             ax.contour(s / 1e3, -(zf[:-1] + zf[1:]) / 2, Sp, levels=np.arange(20, 34, 1.0), colors="k", linewidths=.5)
             ax.fill_between(s / 1e3, -Hp, -zf[-1], color="0.6")
             ax.axvline(s[ks] / 1e3, color="m", lw=.8, ls=":")
+            for k in np.where(~g.interior[jj, ii])[0]:          # eponge OBCS : hachuree
+                ax.axvspan(se[k] / 1e3, se[k + 1] / 1e3, color="0.85", alpha=.6, lw=0, zorder=0)
             ax.set_ylim(-min(zf[-1], 1.3 * Hp.max()), 0)
             ax.set_title(f"{nm} — phase M2 {ph:.0f}°", fontsize=9)
     for ax in axs[-1]:
         ax.set_xlabel("distance le long du talweg (km)")
     for ax in axs[:, 0]:
         ax.set_ylabel("z (m)")
-    fig.colorbar(pc, ax=axs, label="w (m/s) ; contours : S", shrink=.6)
+    fig.colorbar(pc, ax=axs, label="w (m/s) ; contours : S ; gris clair : éponge OBCS", shrink=.6)
     fig.savefig(os.path.join(od, "fig_seuil_coupes.png"), dpi=90); plt.close(fig)
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
