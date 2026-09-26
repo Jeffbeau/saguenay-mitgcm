@@ -158,6 +158,12 @@ cd ../run && ln -sf ../input/* . && ln -sf ../build/mitgcmuv . && mpirun -np 2 .
 cd ~/saguenay-mitgcm && python3 imbrication/comparer.py ~/runs/mini ~/runs/enfantB
 ```
 
-Pour la Config A (hydrostatique, même grille), reprendre sans `--nh` dans `~/runs/enfantA`. Comparer A et B au seuil d'entrée isole l'effet non hydrostatique.
+Pour la Config A (hydrostatique, même grille), reprendre sans `--nh` dans `~/runs/enfantA`. Comparer A et B au seuil isole l'effet non hydrostatique :
+
+```bash
+python3 imbrication/seuil_nh.py ~/runs/enfantA/run ~/runs/enfantB/run      # un seul run accepté aussi
+```
+
+Le script trace le talweg entre les deux frontières les plus éloignées, repère le col et produit, dans `enfantB/run/diag/` : `fig_seuil_coupes.png` (w et isohalines le long du talweg à 8 phases du dernier cycle, A et B côte à côte), `fig_seuil_w.png` (w rms et |w| max près du seuil sur le cycle) et `seuil_nh.txt` (rapports B/A). En z*, WVEL de A est la vitesse r* ; l'écart avec w vraie (~Aω ≈ 2e-4 m/s) est petit devant w au seuil.
 
 À surveiller : `obcs_rapport.txt` (correction de flux de quelques %, bilan de volume < 1 %), le CFL dans `STDOUT.0000` (au premier pas, les vitesses interpolées ne sont pas à divergence nulle), puis `run/diag/imbrication.txt`. `comparer.py` ne compare les débits qu'aux coupes du fichier `--config` situées dans l'enfant, en mètres dans le repère du modèle.

@@ -99,6 +99,7 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
   | Salinité moyenne (rms / étendue) | 2,0 % | 2,0 % |
   | Coût (1 cœur, 2 cycles) | ~15 min | ~20 min |
 
+- **Effet NH au seuil : `imbrication/seuil_nh.py`.** Talweg (chemin le plus profond entre les deux OB les plus éloignées), col = point le moins profond ; coupes w + isohalines à 8 phases, w rms et |w| max à ±1 km du col, rapport B/A. Cas test 200 m (col 23 m, dernier cycle) : w rms 10,4 (A) / 9,6 mm/s (B), |w| max 39 / 52 mm/s (rapport 1,33) : effet faible à 200 m, comme attendu.
 - **Limites.** Le cas test à 200 m ne dit rien de la physique non hydrostatique (δ = H/L trop petit) : il valide la chaîne. Parent en z* et enfant B en surface libre linéaire : T, S sont passés niveau par niveau sans remappage vertical (décalage ≤ |η| près de la surface).
 - **Vrai parent 100 m.** Les instantanés 3D complets à 930 s pèsent ~150 Mo par champ ; l'extraction ne lit que des bandes, mais il faudra les stocker (grappe) ou réduire la période de sortie à la durée de l'enfant.
 
