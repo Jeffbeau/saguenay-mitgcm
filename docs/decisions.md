@@ -108,5 +108,10 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
 ## Constats bathy
 - Cols (sous NMM) : 23 m à 69,647°O (seuil d'entrée) ; 68 m à 18,3 km ; 126 m à 32,4 km. Bassin intérieur ~270 m.
 
+## Littérature sur le 2e seuil et l'Anse-de-Roche (recherche du 2026-09-26)
+- **Tourbillons de pointe** (Livernoche 2017, mémoire M.Sc. UQAR-ISMER, dir. Bourgault, Chavanne, Galbraith ; https://semaphore.uqar.ca/id/eprint/1395/) : tourbillons formés au jusant au cap de la Pointe-aux-Crêpes par frottement du courant sur la bathymétrie ; rayon ~115 m, vitesse tangentielle ~0,11 m/s ; confinés au-dessus de la pycnocline ; équilibre cyclostrophique. CTD, ADCP, échosondeur, PIV sur images géoréférencées du rivage (2013, 2015). **Conséquence : non résolus à 50 m (2-3 mailles de rayon) ; il faut ~25 m ou moins sur la zone du cap, et regarder le niveau ~1 m.**
+- **Ressaut au seuil intermédiaire** (Guay 2023, thèse UQAR, dir. Bourgault, Chavanne ; https://semaphore.uqar.ca/id/eprint/2821/) : un ressaut hydraulique interne semble se former à chaque jusant du côté aval du seuil de 60 m, pas au flot (poche d'eau salée en amont). Cohérent avec w maximal au jusant dans l'enfant B ; le Froude « U moyen / c₁ » de seuil_nh.py (≤ 0,8) sous-estime probablement le régime en couches.
+- **Ondes internes** (Janes 2008, M.Sc. MUN ; Bourgault, Janes et Galbraith 2011, JPO) : grand train d'ondes internes près de l'Anse-de-Roche le 9 juillet 2007 et sa réflexion sur une pente raide ; 23 trains d'ondes échantillonnés des deux côtés du seuil (été 2007).
+
 ## Faits physiques (Belzile et al. 2016, JGR)
 Longueur 110 km, largeur moyenne 2 km (1,1 km à l'embouchure). Seuils : 20 / 60 / 115 m. Bassin intérieur de 280 m. Marnage 4 m (6 m en vives-eaux). Q ≈ 1200 m³/s. Flux d'énergie de marée ~56 MW.
