@@ -224,8 +224,13 @@ if PROFILE == "mini":
 # ---------------------------------------------------------------------------
 if PROFILE == "mini25":
     ZONE = __import__("os").environ.get("SAG_ZONE", "seuil")
-    ZONES = {"seuil": (434800.0, 439600.0, 5332400.0, 5337200.0),    # 192 x 192 x 32 (1,18 M points)
-             "cap":   (431900.0, 435100.0, 5339200.0, 5342400.0)}   # 128 x 128 x 32 (0,52 M points)
+    # Zones calées sur la vraie bathymétrie (fig_child v3, 2026-09-26) :
+    #   seuil : du haut-fond (~50-70 m, y 5335,5-5338) au bassin profond aval (~220 m, x ~438,5) ;
+    #           OB N en amont du haut-fond, OB E dans le chenal aval ; 224 x 256 x 32 (1,84 M points).
+    #   cap   : le coude, le cap et l'anse au sud ; OB O dans le bras est-ouest, OB S dans le bras
+    #           nord-sud ; 160 x 200 x 32 (1,02 M points).
+    ZONES = {"seuil": (434000.0, 439600.0, 5332000.0, 5338400.0),
+             "cap":   (431900.0, 435900.0, 5338400.0, 5343400.0)}
     GRIDS = {"parent": dict(dx=50.0, depuis=(MINI_OUT, "child")),
              "child": dict(dx=25.0, utm=ZONES[ZONE])}
     NR, NSURF, DZ_SURF = 32, 4, 2.0
