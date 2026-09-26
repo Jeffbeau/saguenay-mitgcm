@@ -135,7 +135,8 @@ def main():
 
     # --- instantanes 3D du dernier cycle complet
     pre = a.state3d or sd.guess_prefixes(sd.scan_run(runs[0]), g.nz)[0]
-    its = np.array(sd.list_iters(runs[0], pre)); t = its * g.dt
+    commun = lambda prefix: np.array(sorted(set.intersection(*(set(sd.list_iters(r, prefix)) for r in runs))))
+    its = commun(pre); t = its * g.dt                  # instantanes presents dans tous les runs
     dts = t[1] - t[0]                                  # la sortie finale peut manquer
     tfin = math.floor((t[-1] + dts) / T_M2 + 0.05) * T_M2   # cycle complet a 95 % accepte
     sel = (t >= tfin - T_M2 - 1e-6) & (t < tfin - 1e-6)
@@ -208,7 +209,7 @@ def main():
         li = a.niveau
         kmod = (levs[li] - 1) if levs else li
         wet2 = g.maskC[kmod]
-        it2 = np.array(sd.list_iters(runs[0], pre2)); t2 = it2 * g.dt
+        it2 = commun(pre2); t2 = it2 * g.dt
         s2 = (t2 >= tfin - T_M2 - 1e-6) & (t2 < tfin - 1e-6)
         it2, t2 = it2[s2], t2[s2]
         f0 = np.nanmean(g.fC)
