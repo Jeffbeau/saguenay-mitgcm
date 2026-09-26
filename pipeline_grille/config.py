@@ -190,14 +190,16 @@ if PROFILE == "lite":
 # ~8x plus léger que « lite » : tient dans < 1 Go, un cycle M2 en quelques minutes.
 # ---------------------------------------------------------------------------
 if PROFILE == "mini":
-    # Enfant 50 m (rapport 4) centré sur le 2e seuil (col ~68 m au large d'Anse-de-Roche,
-    # Sacré-Cœur : 69,856°O 48,178°N, x ≈ 436,1 km, y ≈ 5336,3 km), pour la Config B non hydrostatique.
-    # Emprise UTM (x0, x1, y0, y1), sur les faces du parent (200 m), multiples de 800 m :
-    #   col à 3,7 km (O), 4,3 km (E), 4,7 km (S), 4,9 km (N) des bords ; le fjord y tourne du
-    #   nord-sud (OB N attendue) à l'est-ouest (OB E attendue). À vérifier sur fig_child.png.
-    # 160 x 192 x 32 (0,98 M points) : 2 cycles NH ~ 2-3 h sur 2 cœurs, ~1,1 Go (estimation cas test).
+    # Enfant 50 m (rapport 4) : 2e seuil (col ~64 m, x ≈ 435,5 km, y ≈ 5336,4 km) ET cap de la
+    # Pointe-aux-Crêpes (48,2166°N 69,8947°O : x ≈ 433,5 km, y ≈ 5340,8 km ; tourbillons de jusant,
+    # Livernoche 2017), dans le coude où le fjord passe de est-ouest à nord-sud.
+    # Emprise UTM (x0, x1, y0, y1), faces du parent (200 m), multiples de 800 m :
+    #   col à 3,1 km (S) et 4,1 km (E) des bords ; cap à 2,7 km (O) et 3,6 km (N) ;
+    #   OB O attendue dans le bras est-ouest, OB E dans le bras est-ouest aval. À vérifier sur fig_child.png.
+    # 176 x 256 x 32 (1,44 M points) : 2 cycles NH ~ 4-6 h sur 2 cœurs, ~1,6 Go (estimation cas test).
+    # (Emprise précédente x 432,4-440,4, y 5331,6-5341,2 : cap à 440 m du bord nord, dans l'éponge.)
     GRIDS = {"parent": dict(dx=200.0, bbox=(-70.060, -69.550, 48.080, 48.280)),
-             "child": dict(dx=50.0, utm=(432400.0, 440400.0, 5331600.0, 5341200.0))}
+             "child": dict(dx=50.0, utm=(430800.0, 439600.0, 5331600.0, 5344400.0))}
     NR, NSURF, DZ_SURF = 32, 4, 2.0
     R_MAX_ALLOWED = 1.12
     OB_MIN_SEG = 2
