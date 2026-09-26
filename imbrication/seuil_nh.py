@@ -117,11 +117,13 @@ def main():
     if a.de and a.a:
         ij = lambda xy: (int(np.argmin(np.abs(g.YC[:, 0] - xy[1]))), int(np.argmin(np.abs(g.XC[0] - xy[0]))))
         p0, p1 = ij(a.de), ij(a.a)
+        bouts = ("début", "fin")
     else:
         segs = segments_ob(g.maskC[0])
         best = max(((s1, s2) for k, s1 in enumerate(segs) for s2 in segs[k + 1:]),
                    key=lambda p: math.dist(p[0][1], p[1][1]))
         p0, p1 = best[0][1], best[1][1]
+        bouts = (f"OB {best[0][0]}", f"OB {best[1][0]}")
     path = talweg(H, p0, p1)
     jj, ii = path[:, 0], path[:, 1]
     xs, ys = g.XC[jj, ii], g.YC[jj, ii]
@@ -185,7 +187,7 @@ def main():
             ax.set_ylim(-min(zf[-1], 1.3 * Hp.max()), 0)
             ax.set_title(f"{nm} — phase M2 {ph:.0f}°", fontsize=9)
     for ax in axs[-1]:
-        ax.set_xlabel("distance le long du talweg (km)")
+        ax.set_xlabel(f"distance le long du talweg (km) : {bouts[0]} → {bouts[1]}")
     for ax in axs[:, 0]:
         ax.set_ylabel("z (m)")
     fig.colorbar(pc, ax=axs, label="w (m/s) ; contours : S ; gris clair : éponge OBCS", shrink=.6)
@@ -299,7 +301,8 @@ def main():
 
     # --- resume
     lines = [f"Seuil : col {Hp[ks]:.1f} m a x={xs[ks]:.0f} y={ys[ks]:.0f} m (repere du run), "
-             f"talweg {s[-1] / 1e3:.1f} km, zone +-{a.rayon:.0f} m ({zone.sum()} colonnes)",
+             f"talweg {s[-1] / 1e3:.1f} km de {bouts[0]} (s = 0) a {bouts[1]}, col a s = {s[ks] / 1e3:.1f} km, "
+             f"zone +-{a.rayon:.0f} m ({zone.sum()} colonnes)",
              f"Dernier cycle : {t[0]:.0f}-{t[-1]:.0f} s, {len(its)} instantanes"]
     for nm in noms:
         lines.append(f"{nm:24s}: w rms moyen {1e3 * np.mean(res[nm]['wrms']):.2f} mm/s, "
