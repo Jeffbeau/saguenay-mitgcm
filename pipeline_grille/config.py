@@ -189,17 +189,17 @@ if PROFILE == "lite":
 # fjord en amont (aire lue sur le parent « lite ») + le débit de la rivière.
 # ~8x plus léger que « lite » : tient dans < 1 Go, un cycle M2 en quelques minutes.
 # ---------------------------------------------------------------------------
+MINI_OUT = HERE / "output_mini"      # sortie du profil mini (parent des enfants à 25 m)
+
 if PROFILE == "mini":
-    # Enfant 50 m (rapport 4) : 2e seuil (col ~64 m, x ≈ 435,5 km, y ≈ 5336,4 km) ET cap de la
-    # Pointe-aux-Crêpes (48,2166°N 69,8947°O : x ≈ 433,5 km, y ≈ 5340,8 km ; tourbillons de jusant,
-    # Livernoche 2017), dans le coude où le fjord passe de est-ouest à nord-sud.
-    # Emprise UTM (x0, x1, y0, y1), faces du parent (200 m), multiples de 800 m :
-    #   col à 3,1 km (S) et 4,1 km (E) des bords ; cap à 2,7 km (O) et 3,6 km (N) ;
-    #   OB O attendue dans le bras est-ouest, OB E dans le bras est-ouest aval. À vérifier sur fig_child.png.
-    # 176 x 256 x 32 (1,44 M points) : 2 cycles NH ~ 4-6 h sur 2 cœurs, ~1,6 Go (estimation cas test).
-    # (Emprise précédente x 432,4-440,4, y 5331,6-5341,2 : cap à 440 m du bord nord, dans l'éponge.)
+    # Enfant 50 m (rapport 4), emprise v3 : 2e seuil (col ~64 m, x ≈ 435,5 km, y ≈ 5336,4 km), zone du
+    # ressaut de jusant en aval (vers le SE) et cap de la Pointe-aux-Crêpes (48,2166°N 69,8947°O :
+    # x ≈ 433,5 km, y ≈ 5340,8 km ; tourbillons de jusant, Livernoche 2017). Il sert aussi de parent
+    # aux enfants à 25 m (profil mini25) : leurs zones sont à >= 1 km (20 cellules) de ses bords.
+    # Emprise UTM (x0, x1, y0, y1), faces du parent (200 m), multiples de 800 m.
+    # 208 x 272 x 32 (1,81 M points) : ~2 Go ; 3,1 cycles hydrostatiques ~6-8 h sur 2 cœurs.
     GRIDS = {"parent": dict(dx=200.0, bbox=(-70.060, -69.550, 48.080, 48.280)),
-             "child": dict(dx=50.0, utm=(430800.0, 439600.0, 5331600.0, 5344400.0))}
+             "child": dict(dx=50.0, utm=(430800.0, 441200.0, 5330800.0, 5344400.0))}
     NR, NSURF, DZ_SURF = 32, 4, 2.0
     R_MAX_ALLOWED = 1.12
     OB_MIN_SEG = 2
@@ -213,3 +213,26 @@ if PROFILE == "mini":
     UPSTREAM_AREA_DEFAULT = 213e6   # m² (lu sur lite le 2026-09-24) si output_lite/ est absent
     N_CYCLES = 6               # parent de l'enfant 50 m : t0 = 2 cycles + 2 cycles d'enfant + marge ;
                                #   6 cycles aussi pour sagdiag (--skip 2)
+
+
+# ---------------------------------------------------------------------------
+# Profil « mini25 » : enfant à 25 m imbriqué dans l'enfant 50 m du mini (rapport 2).
+# Le « parent » est l'enfant 50 m tel qu'écrit par le profil mini (output_mini/child : même
+# bathymétrie, même grille verticale) : il n'est pas recalculé. Zone choisie par SAG_ZONE :
+#   seuil : côté aval du 2e seuil (ressaut de jusant, Guay 2023), col à ~0,7 km du bord O ;
+#   cap   : cap de la Pointe-aux-Crêpes (tourbillon de surface, rayon ~115 m, Livernoche 2017).
+# ---------------------------------------------------------------------------
+if PROFILE == "mini25":
+    ZONE = __import__("os").environ.get("SAG_ZONE", "seuil")
+    ZONES = {"seuil": (434800.0, 439600.0, 5332400.0, 5337200.0),    # 192 x 192 x 32 (1,18 M points)
+             "cap":   (431900.0, 435100.0, 5339200.0, 5342400.0)}   # 128 x 128 x 32 (0,52 M points)
+    GRIDS = {"parent": dict(dx=50.0, depuis=(MINI_OUT, "child")),
+             "child": dict(dx=25.0, utm=ZONES[ZONE])}
+    NR, NSURF, DZ_SURF = 32, 4, 2.0
+    R_MAX_ALLOWED = 1.12
+    OB_MIN_SEG = 2
+    NPX = 2
+    NEST_RATIO = 2
+    NEST_MARGIN = 20           # cellules de 50 m = 1 km : hors de l'éponge de l'enfant 50 m
+    WORK = HERE / "work_mini"
+    OUT = HERE / f"output_mini25_{ZONE}"

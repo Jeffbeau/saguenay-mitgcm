@@ -30,8 +30,13 @@ def main():
     for name, p in C.GRIDS.items():
         P = grids.get("parent")
         align = (P.x0, P.y0, P.dx) if name == "child" else None     # faces sur celles du parent
-        box = p["utm"] if "utm" in p else bbox_to_utm_inner(*p["bbox"])   # utm : (x0, x1, y0, y1) en m
-        g = G.make_grid(name, *box, p["dx"], align=align)
+        if "depuis" in p:                     # grille existante (ex. enfant 50 m du mini)
+            src = np.load(p["depuis"][0] / "grids.npz"); k = p["depuis"][1]
+            g = G.Grid(name, float(src[f"{k}_x0"]), float(src[f"{k}_y0"]), float(src[f"{k}_dx"]),
+                       int(src[f"{k}_nx"]), int(src[f"{k}_ny"]))
+        else:
+            box = p["utm"] if "utm" in p else bbox_to_utm_inner(*p["bbox"])   # utm : (x0, x1, y0, y1) en m
+            g = G.make_grid(name, *box, p["dx"], align=align)
         grids[name] = g
         print(f"[02] {g}")
 
@@ -52,7 +57,10 @@ def main():
               f"j={joff}..{joff + E.ny // C.NEST_RATIO}")
 
     hmax = C.HMAX
-    if hmax is None:
+    if "depuis" in C.GRIDS["parent"]:          # même grille verticale que le parent existant
+        dz = np.load(C.GRIDS["parent"]["depuis"][0] / "grids.npz")["dz"]; r = float("nan")
+        hmax = float(dz.sum())
+    elif hmax is None:
         lo0, lo1, la0, la1 = C.GRIDS["parent"]["bbox"]
         hm = 0.0
         for t in C.PRODUCTS:
@@ -63,7 +71,8 @@ def main():
                 hm = max(hm, float(np.nanmax(d["H"][np.ix_(jj, ii)])))
         hmax = float(np.ceil((hm + 5.0) / 10.0) * 10.0)
         print(f"[02] HMAX auto : H max NONNA dans le parent = {hm:.1f} m -> {hmax:.0f} m")
-    dz, r = G.vertical_grid(hmax)
+    if "depuis" not in C.GRIDS["parent"]:
+        dz, r = G.vertical_grid(hmax)
     print(f"[02] vertical : Nr={len(dz)}, {C.NSURF}x{C.DZ_SURF} m puis r={r:.4f}, "
           f"dz_max={dz.max():.2f} m, total={dz.sum():.1f} m")
 

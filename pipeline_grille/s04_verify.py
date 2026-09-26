@@ -137,11 +137,12 @@ def main():
         return jj[k], ii[k]
     tkey = f"{GD.name} {GD.dx:g} m"
     s0 = table[tkey][0]
-    Dk, _ = MCP_Geometric(np.where(HEc > 0, 1.0, np.inf)).find_costs([ij(s0["lon"], s0["lat"])])
-    Dk *= GD.dx / 1e3
-    dist = [Dk[ij(s["lon"], s["lat"])] for s in table[tkey] if np.isfinite(s["lon"])]
-    rep += ["", f"Distance le long du chenal depuis le seuil d'entrée ({tkey}) : "
-            + ", ".join(f"{dd:.1f} km" for dd in dist)]
+    if np.isfinite(s0["lon"]):                # seuil d'entrée hors du domaine (enfants 25 m) : sauté
+        Dk, _ = MCP_Geometric(np.where(HEc > 0, 1.0, np.inf)).find_costs([ij(s0["lon"], s0["lat"])])
+        Dk *= GD.dx / 1e3
+        dist = [Dk[ij(s["lon"], s["lat"])] for s in table[tkey] if np.isfinite(s["lon"])]
+        rep += ["", f"Distance le long du chenal depuis le seuil d'entrée ({tkey}) : "
+                + ", ".join(f"{dd:.1f} km" for dd in dist)]
     HPx = res["parent"][0]; lonP = res["parent"][1]["lonc"]
     if (lonP < -70.2).any():
         rep += ["", f"Bassin intérieur (O de 70,2°O, parent) : H max = {HPx[lonP < -70.2].max():.1f} m"]

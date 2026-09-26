@@ -308,8 +308,17 @@ def main():
              if (C.WORK / f"{t}_clean.npz").exists()}
     gs, dz, ioff, joff = load_grids()
     P, E = gs["parent"], gs.get("child")
-    resP, logP = process(P, prods, dz)
-    save(P, resP, dz, logP)
+    dep = C.GRIDS["parent"].get("depuis")
+    if dep:                                   # parent existant (enfant 50 m) : recopié, pas recalculé
+        import shutil
+        src = dep[0] / dep[1]
+        shutil.copytree(src, C.OUT / "parent", dirs_exist_ok=True)
+        gp = np.load(src / "grid.npz")
+        resP = dict(wet=gp["wet"].astype(bool), H=gp["depth"])
+        print(f"[03] parent = {src} (recopié)")
+    else:
+        resP, logP = process(P, prods, dz)
+        save(P, resP, dz, logP)
     if E is not None:
         resE, logE = process(E, prods, dz, parent=(resP["wet"], resP["H"], ioff, joff))
         save(E, resE, dz, logE)
