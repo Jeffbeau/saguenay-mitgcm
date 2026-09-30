@@ -197,3 +197,7 @@ done
 ```
 
 Puis, pour chaque run, compilation `genmake2 -mpi`, essai court et `nohup mpirun -np 2` comme pour l'enfant 50 m. Analyse : `comparer.py` (parent = run 50 m) et `seuil_nh.py` A contre B, `--niveau 0` pour la surface au cap.
+
+Au cap, `seuil_nh.py` demande `--pointe-lonlat -69.8947 48.2166 --pipeline pipeline_grille/output_mini25_cap --rayon-pointe 600` : sans `--pipeline`, l'origine est celle du mini et le point tombe hors du domaine. Détection : `sagdiag_run.py RUN --skip 0 --level 0 --min-diam 4 --sans-3d` (un seul cycle exploitable : pas d'énergétique).
+
+Disque (cap, 160×200×32, sorties float32) : state3D à 930 s ≈ 2,4 Go par run de 2 cycles, le reste ≈ 0,7 Go. Les analyses n'utilisent que le 2e cycle de state3D : celui du 1er cycle peut être effacé après le run. Avec peu de place, mettre `frequency(3) = -1860.` dans `input/data.diagnostics` avant le lancement (1,2 Go ; `seuil_nh.py` prend les instantanés communs aux deux runs).

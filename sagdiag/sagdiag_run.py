@@ -52,6 +52,9 @@ def main():
     ap.add_argument("--min-diam", type=float, default=8.0, help="diametre min. en dx (defaut 8)")
     ap.add_argument("--ow", type=float, default=0.2)
     ap.add_argument("--ro-min", type=float, default=0.2)
+    ap.add_argument("--sans-3d", action="store_true",
+                    help="pas de passe 3D (energetique, flux) : controle et detection 2D seulement ;"
+                         " utile sur un run de 1-2 cycles ou quand le disque est plein")
     a = ap.parse_args()
     out = a.out or os.path.join(a.run, "diag")
     os.makedirs(out, exist_ok=True)
@@ -109,7 +112,7 @@ def main():
     fig.savefig(os.path.join(out, "fig1_controle.png"), dpi=110); plt.close(fig)
 
     # ------------------------------------------------------------ 2. analyse 3D
-    if s3:
+    if s3 and not a.sans_3d:
         eta_fn = sd.eta_interpolator(a.run, g, et) if et else None
         r = sd.phase_analysis_3d(a.run, g, s3, T, os.path.join(out, "phasemean"), skip, a.t0,
                                  regions, sections, log, eta_fn=eta_fn)
