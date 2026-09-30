@@ -132,7 +132,7 @@ python3 imbrication/comparer.py PARENT_RUN ENFANT_DIR        # ENFANT_DIR/run/di
 | --- | --- |
 | Interpolation | Bilinéaire horizontale, points secs du parent remplis par le plus proche voisin mouillé ; linéaire en temps entre instantanés |
 | Enregistrements | n à t = (n − ½)·P, N + 1 enregistrements puis l'état à −P/2 ; externForcingCycle = (N + 2)·P |
-| Correction de flux | Par frontière et par enregistrement : vitesse uniforme ajoutée pour que le débit entrant égale celui du parent à travers la même ligne de faces, moins le remplissage des cellules OB. Seules les faces qui alimentent une cellule intérieure comptent (coins) |
+| Correction de flux | Par frontière et par enregistrement : vitesse uniforme ajoutée pour que le débit entrant égale celui du parent à travers la même ligne de faces (tout le côté de l'enfant, faces du rivage comprises), moins le remplissage des cellules OB. Seules les faces qui alimentent une cellule intérieure comptent (coins). Un côté sans OB où le parent a du débit est signalé |
 | z* | Débit de l'enfant avec le facteur (1 + η_OB/H) ; fichiers OB*eta fournis |
 | Enfant non hydrostatique | Surface libre linéaire, fichiers OB*w ; w vraie = w*(1 + η/H) + (1 − z/H)·∂η/∂t à partir d'un parent en z* |
 
@@ -176,7 +176,7 @@ Le script étudie ensemble le seuil et le tourbillon de la pointe. Il trace le t
 
 Froude interne = \|U moyen\| / c₁, avec c₁ = (1/π)∫N dz (onde interne du mode 1). La pointe est le maximum de \|ζ\| moyen hors de la zone du col ; `--pointe X Y` (m, repère du run) ou `--pointe-lonlat LON LAT` la fixe, `--rayon-pointe` règle la zone (1 500 m). En z*, WVEL de A est la vitesse r* ; l'écart avec w vraie (~Aω ≈ 2e-4 m/s) est petit devant w au seuil.
 
-À surveiller : `obcs_rapport.txt` (correction de flux de quelques %, bilan de volume < 1 %), le CFL dans `STDOUT.0000` (au premier pas, les vitesses interpolées ne sont pas à divergence nulle), puis `run/diag/imbrication.txt`. `comparer.py` ne compare les débits qu'aux coupes du fichier `--config` situées dans l'enfant, en mètres dans le repère du modèle.
+À surveiller : `obcs_rapport.txt` (correction de flux de quelques %, bilan de volume < 1 % : l'erreur sur la marée de l'enfant est du même ordre ; au-delà de 3 %, ne pas lancer), le CFL dans `STDOUT.0000` (au premier pas, les vitesses interpolées ne sont pas à divergence nulle), puis `run/diag/imbrication.txt`. `comparer.py` ne compare les débits qu'aux coupes du fichier `--config` situées dans l'enfant, en mètres dans le repère du modèle.
 
 ## Enfants 25 m (profil `mini25`)
 

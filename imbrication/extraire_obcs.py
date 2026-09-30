@@ -22,6 +22,10 @@ Methode
     meme ligne de faces, moins le remplissage des cellules OB (entre la ligne
     du parent et la face ou MITgcm impose la vitesse). En z*, le debit de
     l'enfant compte le facteur (1 + eta_OB/H) qu'utilise obcs_apply_r_star.F.
+  - Ligne du parent = tout le cote de l'enfant : une face du parent mouillee
+    la ou la maille de bord de l'enfant est seche (rivage) garde son debit,
+    reparti sur les points OB du meme cote. Un cote sans OB dans l'enfant ou
+    le parent a du debit est signale : l'enfant ne peut pas le recevoir.
   - Parent en z* et enfant en surface libre lineaire (config B) : la vitesse
     verticale imposee est la vitesse vraie w = w*(1 + eta/H) + (1 - z/H) deta/dt.
 
@@ -30,6 +34,7 @@ niveau.
 
 Usage
   python3 imbrication/extraire_obcs.py PARENT_RUN ENFANT_DIR [--state3d state3D] [--eta eta2D]
+      [--rangees-ob]   (ancien calcul : debit du parent sur les seules rangees des points OB)
 Ecrit ENFANT_DIR/input/OB*.bin, *_ini.bin et ENFANT_DIR/obcs_rapport.txt.
 """
 import argparse, json, os, sys
@@ -199,7 +204,7 @@ class Enfant:
         """Coordonnees (x, y) des points OB : centre C, face normale, face tangentielle ;
         epaisseurs de la face normale (nz, npts)."""
         dx, dy, x0, y0 = self.dx, self.dy, self.x0, self.y0
-        q = self.ob[side]
+        q = self.ob.get(side, np.zeros(0, int))
         if side in "WE":
             i = 0 if side == "W" else self.nx - 1
             iu = 1 if side == "W" else self.nx - 1          # face ou MITgcm impose u
@@ -242,17 +247,22 @@ class Bord:
     def __init__(self, P, E, side):
         self.side = side
         self.C, self.Nf, self.T, self.hn = E.points(side)
-        # ligne de faces du parent sur le bord de l'enfant + cellules du parent concernees
+        # ligne de faces du parent sur tout le cote de l'enfant (faces seches : debit nul) ;
+        # couvert : rangees (colonnes) du parent qui contiennent un point OB de l'enfant
         if side in "WE":
             xe = E.x0 if side == "W" else E.x0 + E.nx * E.dx
             self.pf = int(round((xe - P.xg0) / P.dx))
-            self.pc = np.unique(np.floor((self.C[1] - P.yg0) / P.dy).astype(int))
-            pts = ([xe - P.dx, xe + P.dx], [self.C[1].min(), self.C[1].max()])
+            k0, k1 = int(round((E.y0 - P.yg0) / P.dy)), int(round((E.y0 + E.ny * E.dy - P.yg0) / P.dy))
+            couv = np.floor((self.C[1] - P.yg0) / P.dy).astype(int)
+            pts = ([xe - P.dx, xe + P.dx], [P.yg0 + (k0 + 0.5) * P.dy, P.yg0 + (k1 - 0.5) * P.dy])
         else:
             ye = E.y0 if side == "S" else E.y0 + E.ny * E.dy
             self.pf = int(round((ye - P.yg0) / P.dy))
-            self.pc = np.unique(np.floor((self.C[0] - P.xg0) / P.dx).astype(int))
-            pts = ([self.C[0].min(), self.C[0].max()], [ye - P.dy, ye + P.dy])
+            k0, k1 = int(round((E.x0 - P.xg0) / P.dx)), int(round((E.x0 + E.nx * E.dx - P.xg0) / P.dx))
+            couv = np.floor((self.C[0] - P.xg0) / P.dx).astype(int)
+            pts = ([P.xg0 + (k0 + 0.5) * P.dx, P.xg0 + (k1 - 0.5) * P.dx], [ye - P.dy, ye + P.dy])
+        self.pc = np.arange(k0, k1)
+        self.couvert = np.isin(self.pc, couv)
         self.box = boite(P, [self.C[0], self.T[0], pts[0]], [self.C[1], self.T[1], pts[1]])
         b = self.box
         hC = P.grille("hFacC", b); hW = P.grille("hFacW", b); hS = P.grille("hFacS", b)
@@ -271,7 +281,8 @@ class Bord:
         self.hC = hC
 
     def debit_parent(self, P, t):
-        """Debit entrant du parent a travers la ligne de faces (m3/s)."""
+        """Debit entrant du parent a travers la ligne de faces (m3/s) : tout le cote, et la part
+        des rangees sans point OB de l'enfant."""
         b = self.box
         name = "UVEL" if self.side in "WE" else "VVEL"
         v = P.champ(name, t, b)
@@ -281,7 +292,8 @@ class Bord:
             e = P.champ("ETAN", t, b)[0]
             ef = 0.5 * (e[self.cells[0], self.cells[1]] + e[self.cells[2], self.cells[3]])
             fac = 1.0 + ef / np.where(self.Hp > 0, self.Hp, 1.0)
-        return SIGN[self.side] * float((vn * self.hp * fac).sum())
+        q = SIGN[self.side] * (vn * self.hp * fac).sum(0)
+        return float(q.sum()), float(q[~self.couvert].sum())
 
     def extraire(self, P, E, t, dtd):
         """Valeurs brutes aux points OB de l'enfant a l'instant parent t."""
@@ -318,6 +330,8 @@ def main():
     ap.add_argument("parent"); ap.add_argument("enfant")
     ap.add_argument("--state3d"); ap.add_argument("--eta")
     ap.add_argument("--sans-correction", action="store_true", help="pas de correction de flux (test)")
+    ap.add_argument("--rangees-ob", action="store_true",
+                    help="ancien calcul (test) : debit du parent sur les seules rangees des points OB")
     a = ap.parse_args()
 
     P = Parent(a.parent, a.state3d, a.eta)
@@ -337,7 +351,7 @@ def main():
 
     rap = [f"Extraction parent -> enfant : {os.path.abspath(a.parent)} -> {os.path.abspath(E.dir)}",
            f"t0 = {t0:.0f} s (parent), {nrec} enregistrements de {Pp:.0f} s, externForcingCycle = {nrec * Pp:.1f}", ""]
-    sumQ = np.zeros(nrec)
+    sumQ = np.zeros(nrec); sumQh = np.zeros(nrec)
     for side in E.ob:
         B = Bord(P, E, side)
         q = E.ob[side]
@@ -345,6 +359,7 @@ def main():
         arrs = {k: np.zeros((nrec, E.nr, nlen)) for k in ("n", "t_", "t", "s", "w")}
         eta = np.zeros((nrec, nlen))
         Qp = np.zeros(nrec); Qc0 = np.zeros(nrec); dl = np.zeros(nrec); rmsu = np.zeros(nrec)
+        Qh = np.zeros(nrec)
         wet = B.hn > 0
         wetn = wet & E.alimente(side)[None]          # faces corrigees et comptees
         jo, io = E.cellules_ob(side)
@@ -357,7 +372,10 @@ def main():
             area = B.hn * fac
             un = v["n"] * wetn
             Qc = SIGN[side] * float((un * area).sum())
-            Qt = B.debit_parent(P, t) - float((v["deta"] * aob).sum())
+            Qtot, Qh[r] = B.debit_parent(P, t)
+            if a.rangees_ob:
+                Qtot -= Qh[r]
+            Qt = Qtot - float((v["deta"] * aob).sum())
             d = 0.0 if a.sans_correction else (Qt - Qc) / float((area * wetn).sum()) * SIGN[side]
             un = (v["n"] + d * wetn) * wet
             Qp[r], Qc0[r], dl[r] = Qt, Qc, d
@@ -370,6 +388,8 @@ def main():
                 arrs["w"][r][:, q] = v["w"] * (E.hC[:, jo, io] > 0)
             eta[r, q] = v["eta"]
         sumQ += Qp
+        if a.rangees_ob:
+            sumQh += Qh
         norm, tang = ("u", "v") if side in "WE" else ("v", "u")
         wr = lambda n, x: np.asarray(x, ">f8").tofile(os.path.join(inp, f"OB{side}{n}.bin"))
         wr(norm, arrs["n"]); wr(tang, arrs["t_"]); wr("t", arrs["t"]); wr("s", arrs["s"])
@@ -382,6 +402,21 @@ def main():
                 f"moyen {Qp[:-2].mean():8.1f} | ecart avant correction {100 * ecart:5.1f} % | "
                 f"correction max {np.abs(dl).max():.4f} m/s ({100 * np.abs(dl).max() / max(rmsu.max(), 1e-9):.1f} % de u rms max)")
         print(line); rap.append(line)
+        if np.abs(Qh).max() > 0.001 * max(np.abs(Qp).max(), 1e-9):
+            line = (f"       dont faces du parent hors des points OB de l'enfant (rivage) : max {np.abs(Qh).max():.1f} m3/s"
+                    + (" -> ignore (--rangees-ob)" if a.rangees_ob else " -> reparti sur les points OB du cote"))
+            print(line); rap.append(line)
+
+    # cotes sans OB dans l'enfant : le debit du parent qui les traverse est perdu
+    perdu = np.zeros(nrec - 2)
+    for side in [s for s in "WESN" if s not in E.ob]:
+        B = Bord(P, E, side)
+        Qs = np.array([B.debit_parent(P, t0 + tc)[0] for tc in trec[:-2]])
+        perdu += Qs
+        if np.abs(Qs).max() > 0.001 * max(np.abs(sumQ[:-2]).max(), 1e-9):
+            line = (f"Cote {side} sans OB dans l'enfant : debit du parent max {np.abs(Qs).max():.1f} m3/s "
+                    f"(perdu : l'enfant est ferme la ; deplacer l'emprise ou elargir le masque)")
+            print(line); rap.append(line)
 
     # bilan de volume : sum des debits = remplissage de l'enfant (eta du parent)
     Q = sumQ[:-2]
@@ -403,9 +438,13 @@ def main():
             & ((xcp > E.x0) & (xcp < E.x0 + E.nx * E.dx))[None, :])
     Ap = (mCb[0] & dans).sum() * P.dx * P.dy
     res = np.abs(Q - dV).max() / max(np.abs(Q).max(), 1e-9)
+    Q4 = Q + sumQh[:-2] + perdu                                  # debit du parent, 4 cotes complets
+    res4 = np.abs(Q4 - dV).max() / max(np.abs(Q4).max(), 1e-9)
     lines = ["",
              f"Bilan de volume (debits imposes - remplissage de l'enfant avec l'eta du parent) : "
-             f"max {np.abs(Q - dV).max():.1f} m3/s = {100 * res:.2f} % du debit max",
+             f"max {np.abs(Q - dV).max():.1f} m3/s = {100 * res:.2f} % du debit max"
+             + ("  ATTENTION : la maree de l'enfant sera faussee d'autant" if res > 0.03 else ""),
+             f"Bilan du parent sur les 4 cotes (controle du calcul des debits) : {100 * res4:.2f} %",
              f"Surface mouillee : enfant {wetC.sum() * E.dx * E.dy / 1e6:.2f} km2, "
              f"parent sur l'emprise {Ap / 1e6:.2f} km2"]
     for l in lines:
