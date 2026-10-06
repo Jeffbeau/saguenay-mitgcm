@@ -1,6 +1,6 @@
 CBOP
 C    !ROUTINE: SIZE.h
-C    enfant du cas test (118x76x32, dx=200 m)
+C    Enfant du cas test (118x76x32, dx=200 m)
 CEOP
       INTEGER sNx, sNy, OLx, OLy, nSx, nSy, nPx, nPy, Nx, Ny, Nr
       PARAMETER (
