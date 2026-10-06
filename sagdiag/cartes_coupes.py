@@ -565,7 +565,8 @@ def main():
                     ax.clabel(cs, cs.levels[::2], fmt=lambda v: fr(v, "{:g}"), fontsize=6)
                 ax.plot(s, pyc, ls="--", color=PYC, lw=1.3)
                 ax.plot(s, d["eta"], color="#1f4e79", lw=1)
-                ax.fill_between(s, -Hz[c["jj"], c["ii"]], -zmax - 5, step="mid", color="0.6", zorder=3)
+                hb = -Hz[c["jj"], c["ii"]]
+                ax.fill_between(se, np.r_[hb, hb[-1]], -zmax - 5, step="post", color="0.6", zorder=3)
                 for kk in np.where(~g.interior[c["jj"], c["ii"]])[0]:      # eponge : bande en haut
                     ax.axvspan(se[kk], se[kk + 1], ymin=.94, color="0.55", lw=0, zorder=5)
                 if c["nom"] == "talweg":
