@@ -1,4 +1,4 @@
-# Configuration MITgcm Saguenay : décisions et état (2026-09-30)
+# Configuration MITgcm Saguenay : décisions et état (2026-10-06)
 
 Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3fb70c27403
 
@@ -12,6 +12,7 @@ Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-
 - VirtualBox Linux (hôte « mitgcm », utilisateur jf) : 3 cœurs, 3,8 Go de RAM, pas de swap au départ. MITgcm dans ~/MITgcm (genmake2 demande -rootdir=$HOME/MITgcm ; pkg-config installé pour MPI). gfortran + OpenMPI.
 - Dossier partagé VirtualBox : /media/sf_MITGCM (Additions invité installées, groupe vboxsf). Runs copiés dans ~/runs/.
 - **Disque (2026-09-30) : 30 Go, 1,4 Go libres (96 %).** ~/runs : enfantA_v3 7,9 Go (parent des enfants 25 m : à garder), p25_cap_B 3,0 Go, enfantA_v2 / enfantB_v2 ~0,3 Go chacun. Un enfant 25 m au cap (160×200×32, float32) : state3D à 930 s ≈ 2,4 Go pour 2 cycles, reste ≈ 0,7 Go ; state3D à 1860 s ≈ 1,2 Go. Les analyses n'utilisent que le 2e cycle de state3D.
+- **2026-10-06 : seul ~/runs/enfantA_v3 reste** (p25_cap_B, enfantA_v2 et enfantB_v2 effacés). Accès à une grappe de calcul en vue : il faut montrer des résultats de test.
 - Le profil lite (5 M points) a été tué par manque de mémoire (OOM) sur 3 processus, d'où la création du profil mini.
 - Pas d'Ubuntu/WSL sur le poste du travail.
 - Python sur la VM : dans un venv (Ubuntu 24.04 refuse pip dans le Python système ; un NumPy 2 installé par pip à côté de rasterio d'apt casse l'import). setup_mitgcm.sh n'utilise plus pip hors venv.
@@ -25,6 +26,7 @@ Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-
 - 3e seuil : on le garde dans le mini. L'enfant passe à 25 km si l'EKE du 3e seuil est sous 20 % de celle du 2e.
 - Extraction parent → enfant : `imbrication/extraire_obcs.py` (voir « Imbrication »). Enfant démarré à un t0 multiple de 44 640 s (phase M2 nulle), enregistrements OBCS toutes les 930 s (les instantanés 3D du parent).
 - Config B (non hydrostatique) : GGL90viscMax ≤ 0,2·dz_min²/Δt, car la viscosité verticale est explicite sur w.
+- **Figures de présentation (2026-10-06)** : `sagdiag/cartes_coupes.py` sur le dernier cycle complet, aux 4 phases repérées sur η moyen (flot = dη/dt max, pleine mer, jusant = dη/dt min, basse mer). Courants de surface (lev2D ~1 m), zoom sur le cap (lignes de courant sur ζ/f, 8 instants), coupes le long du talweg et en travers au col et au cap : σ et vitesse vers l'aval en profondeur vraie (z* : z = η + r*(1 + η/H)), zoom par défaut à 2 × la base de la pycnocline (N² > 10 % du max). Origine UTM de l'enfant 50 m v3 : 430800, 5330800 (faces de l'emprise v3).
 
 ## Pipeline grille + bathy + forçage
 Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib.py, s01..s05, run_all.py, templates/). Profils SAG_PROFILE : full (output/), lite (output_lite/), mini (output_mini/).

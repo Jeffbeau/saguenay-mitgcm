@@ -65,6 +65,7 @@ Cahier des charges : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3f
 
 ## Prochaines tâches
 
+- Figures pour présenter les tests (grappe en vue) : `sagdiag/cartes_coupes.py ~/runs/enfantA_v3/run --origine-utm 430800 5330800 --gif` (seul run restant sur la VM).
 - Relancer le mini sur 6 cycles avec `sagdiag/data.diagnostics.mini_recommande` (il sert de parent : state3D à 930 s avec WVEL, eta2D à 360 s), puis analyser avec `--skip 2`.
 - Enfants 25 m (`mini25`, parent `~/runs/enfantA_v3`) : le cap B a tourné, mais l'imbrication échoue (marée +13,6 %, bilan de volume de l'extraction 14,3 %). Ré-extraire A et B avec le nouvel `extraire_obcs.py` (ligne du parent sur tout le côté), vérifier bilan < 3 % dans `obcs_rapport.txt`, puis relancer A (z*, référence en surface) et B. Disque de la VM presque plein : voir `docs/decisions.md`. Analyses au cap : `comparer.py`, `seuil_nh.py --niveau 0/1/2 --pointe-lonlat -69.8947 48.2166 --pipeline pipeline_grille/output_mini25_cap --rayon-pointe 600`, même calcul sur le 50 m, `sagdiag_run.py --skip 0 --level 0 --min-diam 4 --sans-3d` ; cibles Livernoche : r ~115 m, V ~0,11 m/s, Γ ~80 m²/s. Ensuite : zone seuil à 25 m.
 - Adapter `sagdiag/coupes_mini_modele.json` aux vrais seuils du mini.

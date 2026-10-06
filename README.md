@@ -12,6 +12,7 @@ Configuration MITgcm (checkpoint69k) du fjord du Saguenay et diagnostics tourbil
 | `pipeline_grille/` | Pipeline grille + bathy + forçage (code seulement, pas de données) |
 | `sagdiag/sagdiag.py` | Bibliothèque : lecture MDS (fichiers globaux ou par tuile), moyenne de phase, énergétique, tourbillons |
 | `sagdiag/sagdiag_run.py` | Chaîne complète : contrôle du run, analyses, figures, `resume.txt` |
+| `sagdiag/cartes_coupes.py` | Figures de présentation : courants de surface, zoom sur le cap, coupes zoomées sur la pycnocline |
 | `sagdiag/coupes_test.json` | Régions et coupes du cas test |
 | `sagdiag/coupes_mini_modele.json` | Modèle à compléter pour ton mini (lon/lat) |
 | `sagdiag/data.diagnostics.mini_recommande` | Sorties recommandées pour le mini |
@@ -46,6 +47,30 @@ Pour trouver les indices des niveaux à ~1, 10 et 30 m de ta grille (à reporter
 ```bash
 python3 -c "import sys; sys.path.insert(0,'sagdiag'); import sagdiag as s; s.print_levels('$HOME/runs/mini')"
 ```
+
+## Figures de présentation (cartes et coupes)
+
+`sagdiag/cartes_coupes.py` trace, pour le dernier cycle M2 complet d'un run, les courants de surface et des coupes verticales zoomées sur la pycnocline. Il prend 4 moments du cycle, repérés sur η moyen : flot (dη/dt max), pleine mer, jusant (dη/dt min) et basse mer. Pour l'enfant 50 m v3 :
+
+```bash
+cd ~/saguenay-mitgcm
+python3 sagdiag/cartes_coupes.py ~/runs/enfantA_v3/run --origine-utm 430800 5330800 --gif
+```
+
+Sorties dans `RUN/diag/figures/` (quelques minutes, un champ 3D à la fois) :
+
+| Fichier | Contenu |
+| --- | --- |
+| `fig_courants_surface.png` | Vitesse à ~1 m (couleur) et flèches, 4 phases |
+| `fig_vorticite_surface.png` | ζ/f à ~1 m et flèches, 4 phases |
+| `fig_cap_zoom.png` | Lignes de courant sur ζ/f autour du cap de la Pointe-aux-Crêpes, 8 instants du cycle |
+| `fig_carte_coupes.png` | Bathymétrie, talweg, coupes transversales au col et au cap |
+| `fig_profils.png` | Profils moyens S, T, N² : profondeur et épaisseur de la pycnocline |
+| `fig_coupe_talweg.png`, `fig_coupe_col.png`, `fig_coupe_cap.png` | σ et isopycnes, vitesse vers l'aval, 4 phases, de la surface à `--zmax` |
+| `courants_surface.gif` | Animation des courants de surface sur le cycle (`--gif`) |
+| `cartes_coupes.txt` | Phases, pycnocline, vitesses, ζ/f au cap |
+
+Les coupes sont tracées en profondeur vraie, z = η + r*(1 + η/H) en z*, avec la surface libre. Le tireté marque la pycnocline (N² max de chaque colonne). Le zoom vaut par défaut 2 fois la base de la pycnocline (N² > 10 % du max) ; `--zmax 0` montre toute la colonne. Axes en km UTM 19N si l'origine est connue : `--origine-utm X0 Y0` (coin sud-ouest du run), ou `grids.npz` de `--pipeline` avec `enfant.json` à côté du run. Le cap est alors placé d'office ; sinon `--cap X Y` (m, repère du run). `--cycle k` choisit le cycle [k·T, (k+1)·T).
 
 ## Méthode
 
