@@ -102,7 +102,8 @@ def echelles(D, s, inter, frac_seuil=0.1):
 
 
 def cout_run(run, g):
-    """Temps de calcul (MITgcm : section ALL de THE_MODEL_MAIN) et nombre de processus."""
+    """Temps de calcul (MITgcm : section ALL de THE_MODEL_MAIN), nombre de processus et de pas du
+    meme segment de run (en-tete du meme fichier : nProcs, nTimeSteps relu de data)."""
     for f in [os.path.join(run, n) for n in ("STDOUT.0000", "output.txt", "nohup.out")] + \
              [os.path.join(run, "..", "output.txt")]:
         if not os.path.exists(f):
@@ -112,8 +113,12 @@ def cout_run(run, g):
             txt = fh.read().decode(errors="ignore")
         m = re.search(r'Seconds in section "ALL\s+\[THE_MODEL_MAIN\]".*?Wall clock time:\s*([0-9.Ee+-]+)', txt, re.S)
         if m:
-            nproc = len(glob.glob(os.path.join(run, "STDOUT.[0-9]*"))) or 1
-            return float(m.group(1)), nproc, os.path.basename(f)
+            with open(f, "rb") as fh:
+                tete = fh.read(400_000).decode(errors="ignore")
+            mp = re.search(r"nProcs\s*=\s*(\d+)", tete)
+            ms = re.search(r">\s*nTimeSteps\s*=\s*(\d+)", tete, re.I)
+            nproc = int(mp.group(1)) if mp else (len(glob.glob(os.path.join(run, "STDOUT.[0-9]*"))) or 1)
+            return float(m.group(1)), nproc, os.path.basename(f), (int(ms.group(1)) if ms else None)
     return None
 
 
@@ -336,10 +341,10 @@ def main():
     # ------------------------------------------------------------------ cout et extrapolation
     c = cout_run(a.run, g)
     dt = float(g.dt)
-    nst = sd.nml_value(os.path.join(a.run, "data"), "nTimeSteps")
     npts = g.nx * g.ny * g.nz
+    nst = (c[3] if c else None) or sd.nml_value(os.path.join(a.run, "data"), "nTimeSteps")
     if c and nst:
-        wall, nproc, src = c
+        wall, nproc, src = c[:3]
         cps = wall * nproc / (npts * nst)                  # coeur.s par point et par pas
         lines.append(f"Coût du run ({src}) : {wall / 3600:.1f} h sur {nproc} processus pour {int(nst)} pas de "
                      f"{dt:g} s, {npts / 1e6:.2f} M points -> {cps:.2e} cœur.s par point et par pas")
