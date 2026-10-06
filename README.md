@@ -13,6 +13,7 @@ Configuration MITgcm (checkpoint69k) du fjord du Saguenay et diagnostics tourbil
 | `sagdiag/sagdiag.py` | Bibliothèque : lecture MDS (fichiers globaux ou par tuile), moyenne de phase, énergétique, tourbillons |
 | `sagdiag/sagdiag_run.py` | Chaîne complète : contrôle du run, analyses, figures, `resume.txt` |
 | `sagdiag/cartes_coupes.py` | Figures de présentation : courants de surface, zoom sur le cap, coupes zoomées sur la pycnocline |
+| `sagdiag/animations.py` | Animations (w le long du talweg et en plan, vorticité de surface), taille des structures de w, coût et extrapolation |
 | `sagdiag/coupes_test.json` | Régions et coupes du cas test |
 | `sagdiag/coupes_mini_modele.json` | Modèle à compléter pour ton mini (lon/lat) |
 | `sagdiag/data.diagnostics.mini_recommande` | Sorties recommandées pour le mini |
@@ -71,6 +72,22 @@ Sorties dans `RUN/diag/figures/` (quelques minutes, un champ 3D à la fois) :
 | `cartes_coupes.txt` | Phases, pycnocline, vitesses, ζ/f au cap |
 
 Les coupes sont tracées en profondeur vraie, z = η + r*(1 + η/H) en z*, avec la surface libre. Le tireté marque la pycnocline (N² max de chaque colonne). Le zoom vaut par défaut 2 fois la base de la pycnocline (N² > 10 % du max) ; `--zmax 0` montre toute la colonne. Axes en km UTM 19N si l'origine est connue : `--origine-utm X0 Y0` (coin sud-ouest du run), ou `grids.npz` de `--pipeline` avec `enfant.json` à côté du run. Le cap est alors placé d'office ; sinon `--cap X Y` (m, repère du run). `--cycle k` choisit le cycle [k·T, (k+1)·T).
+
+### Animations et arguments pour aller plus loin
+
+```bash
+python3 sagdiag/animations.py ~/runs/enfantA_v3/run --origine-utm 430800 5330800
+```
+
+| Fichier | Contenu |
+| --- | --- |
+| `anim_w_talweg.gif` | w vraie le long du talweg (couleur), isopycnes et surface libre, sur le cycle |
+| `anim_w_carte.gif` | w vraie en plan à 10 et 40 m (`--profondeurs`) |
+| `anim_vorticite.gif` | ζ/f et flèches à ~1 m |
+| `fig_echelles_w.png` | Longueur d'onde des structures de w le long du talweg (passages par zéro), comparée à 8 Δx et au tourbillon observé (D ≈ 230 m) |
+| `animations.txt` | Échelles, coût du run (section ALL de `STDOUT.0000` ou `output.txt`) et extrapolation aux configurations visées |
+
+En z*, w vraie = w*(1 + η/H) + (1 − d/H)·∂η/∂t (d : profondeur r*). L'extrapolation suppose le même code hydrostatique, Δt ∝ Δx et un coût proportionnel au nombre de points × pas ; la mémoire est une borne basse (le profil lite, 5 M points, a dépassé 3,8 Go).
 
 ## Méthode
 

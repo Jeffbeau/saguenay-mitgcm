@@ -277,6 +277,36 @@ def pycnocline_colonne(sig, zc, zmin=-np.inf, seuil=0.0):
     return np.where(ok, 0.5 * (zc[k, n] + zc[k + 1, n]), np.nan)
 
 
+def geometrie_talweg(g):
+    """Talweg entre les deux frontieres ouvertes les plus eloignees, oriente amont (ouest) -> aval :
+    cellules (jj, ii), positions, distance s, tangente lissee sur ~500 m (tx, ty), indice du col."""
+    wet = g.maskC[0]
+    Hz = g.Depth * wet
+    segs = segments_ob(wet)
+    if len(segs) >= 2:
+        best = max(((s1, s2) for k, s1 in enumerate(segs) for s2 in segs[k + 1:]),
+                   key=lambda p: math.dist(p[0][1], p[1][1]))
+        p0, p1 = best[0][1], best[1][1]
+        b0, b1 = best[0][0], best[1][0]
+    else:                                   # pas deux frontieres ouvertes : extremes du domaine mouille
+        jw, iw = np.where(wet)
+        p0, p1 = (jw[np.argmin(iw)], iw.min()), (jw[np.argmax(iw)], iw.max())
+        b0, b1 = "O", "E"
+    if g.XC[p0] > g.XC[p1]:                 # amont (ouest) -> aval (est, embouchure)
+        p0, p1, b0, b1 = p1, p0, b1, b0
+    path = talweg(Hz, p0, p1)
+    jj, ii = path[:, 0], path[:, 1]
+    xs, ys = g.XC[jj, ii], g.YC[jj, ii]
+    s = np.r_[0.0, np.cumsum(np.hypot(np.diff(xs), np.diff(ys)))]
+    nw = max(2, int(round(250.0 / float(g.DXC[0, 0]))))
+    tx = np.array([xs[min(n + nw, xs.size - 1)] - xs[max(n - nw, 0)] for n in range(xs.size)])
+    ty = np.array([ys[min(n + nw, ys.size - 1)] - ys[max(n - nw, 0)] for n in range(ys.size)])
+    nn = np.hypot(tx, ty)
+    Hp = Hz[jj, ii]; n = s.size
+    kc = n // 10 + int(np.argmin(Hp[n // 10: n - n // 10]))
+    return dict(jj=jj, ii=ii, xs=xs, ys=ys, s=s, tx=tx / nn, ty=ty / nn, kc=kc, b0=b0, b1=b1)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("run")
@@ -418,28 +448,9 @@ def main():
 
     # ------------------------------------------------------------------ coupes : geometrie
     Hz = g.Depth * wet
-    segs = segments_ob(wet)
-    if len(segs) >= 2:
-        best = max(((s1, s2) for k, s1 in enumerate(segs) for s2 in segs[k + 1:]),
-                   key=lambda p: math.dist(p[0][1], p[1][1]))
-        p0, p1 = best[0][1], best[1][1]
-        b0, b1 = best[0][0], best[1][0]
-    else:                                   # pas deux frontieres ouvertes : extremes du domaine mouille
-        jw, iw = np.where(wet)
-        p0, p1 = (jw[np.argmin(iw)], iw.min()), (jw[np.argmax(iw)], iw.max())
-        b0, b1 = "O", "E"
-    if g.XC[p0] > g.XC[p1]:                 # amont (ouest) -> aval (est, embouchure)
-        p0, p1, b0, b1 = p1, p0, b1, b0
-    path = talweg(Hz, p0, p1)
-    tj, ti = path[:, 0], path[:, 1]
-    xs, ys = g.XC[tj, ti], g.YC[tj, ti]
-    s_t = np.r_[0.0, np.cumsum(np.hypot(np.diff(xs), np.diff(ys)))]
-    nw = max(2, int(round(250.0 / float(g.DXC[0, 0]))))       # tangente lissee sur ~500 m
-    tx = np.array([xs[min(n + nw, xs.size - 1)] - xs[max(n - nw, 0)] for n in range(xs.size)])
-    ty = np.array([ys[min(n + nw, ys.size - 1)] - ys[max(n - nw, 0)] for n in range(ys.size)])
-    nn = np.hypot(tx, ty); tx, ty = tx / nn, ty / nn
-    Hp = Hz[tj, ti]; n = s_t.size
-    kc = n // 10 + int(np.argmin(Hp[n // 10: n - n // 10]))
+    T_ = geometrie_talweg(g)
+    tj, ti, xs, ys, s_t, tx, ty, kc, b0, b1 = (T_[k] for k in ("jj", "ii", "xs", "ys", "s", "tx", "ty", "kc", "b0", "b1"))
+    Hp = Hz[tj, ti]
     coupes = [dict(nom="talweg", titre=f"talweg, amont (OB {b0}) → aval (OB {b1})", s=s_t, jj=tj, ii=ti,
                    tx=tx, ty=ty, xlab=f"distance le long du talweg (km), amont (OB {b0}) → aval (OB {b1})")]
     def transverse(nom, titre, kp):
@@ -612,7 +623,7 @@ def main():
             ax.plot((cap[0] + ox) / 1e3, (cap[1] + oy) / 1e3, "*", ms=11, mfc="gold", mec="k", zorder=5)
         ax.set_xlabel(xlab); ax.set_ylabel(ylab)
         fig.colorbar(pc, cax=fig.add_axes([0.85, 0.07, 0.025, 0.55]), label=f"vitesse à {fr(zsurf)} m (m/s)")
-        ttl = ax.set_title("", fontsize=10)
+        ttl = ax.set_title("", fontsize=10, loc="left")
         if serie:
             axm = fig.add_axes([0.84, 0.72, 0.14, 0.15])
             axm.plot((serie[0] - tdeb) / 3600, serie[1], color="#1f4e79", lw=1)
