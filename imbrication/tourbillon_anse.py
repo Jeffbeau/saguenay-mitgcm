@@ -186,6 +186,7 @@ def main():
     ap.add_argument("--skip", type=int, default=1, help="cycles complets ignores au debut (demarrage)")
     ap.add_argument("--heures", nargs=2, type=float, default=(-4.0, 1.5), help="cartes : de H0 a H1 (h, BM = 0)")
     ap.add_argument("--pas", type=float, default=0.5, help="cartes : pas (h)")
+    ap.add_argument("--seuil-patch", type=float, default=5.0, help="taille de la zone zeta > S f autour du coeur")
     ap.add_argument("--zlim", type=float, default=20.0, help="echelle de zeta/f (observations : 20)")
     a = ap.parse_args()
     runs = a.runs
@@ -278,15 +279,23 @@ def main():
             if cy_:
                 jc = int(np.argmin(np.abs(g.YC[:, 0] - cy_["y"]))); ic = int(np.argmin(np.abs(g.XC[0] - cy_["x"])))
                 L = largeur(wet, jc, ic, dx)
+                # « patch » : zone zeta > --seuil-patch f qui contient le coeur (comme la tache rouge observee)
+                lab5, _ = ndimage.label(fen & (np.nan_to_num(zc) > a.seuil_patch * abs(f0)))
+                ids = np.unique(lab5[cy_["masque"]]); ids = ids[ids > 0]
+                pm = np.isin(lab5, ids) if ids.size else cy_["masque"]
+                A5 = float((g.RAC * pm).sum())
                 row.update(gam=cy_["gam"], D=cy_["D"], romax=cy_["romax"], ro90=cy_["ro90"], V=cy_["V"],
-                           x=cy_["x"], y=cy_["y"], largeur=L, frac=cy_["D"] / L if L else np.nan)
+                           x=cy_["x"], y=cy_["y"], largeur=L, frac=cy_["D"] / L if L else np.nan,
+                           gam5=float((np.nan_to_num(zc) * g.RAC * pm).sum()), D5=2 * math.sqrt(A5 / math.pi))
             else:
-                row.update(gam=0.0, D=0.0, romax=0.0, ro90=0.0, V=0.0, x=np.nan, y=np.nan, largeur=np.nan, frac=np.nan)
+                pm = None
+                row.update(gam=0.0, D=0.0, romax=0.0, ro90=0.0, V=0.0, x=np.nan, y=np.nan, largeur=np.nan, frac=np.nan,
+                           gam5=0.0, D5=0.0)
             row.update(gam_anti=an_["gam"] if an_ else 0.0, x_anti=an_["x"] if an_ else np.nan,
                        y_anti=an_["y"] if an_ else np.nan)
             det[nm].append(row)
             if c == dernier and it in itc:
-                cartes[nm][int(it)] = (zc / f0, dv / abs(f0), u, v, cy_["masque"] if cy_ else None)
+                cartes[nm][int(it)] = (zc / f0, dv / abs(f0), u, v, cy_["masque"] if cy_ else None, pm)
 
     od = os.path.join(runs[-1], "diag"); os.makedirs(od, exist_ok=True)
 
@@ -297,7 +306,7 @@ def main():
     phs = [(h, it) for h, it in zip(heures, itc) if it is not None]
     ncol = min(4, len(phs)); nrow = math.ceil(len(phs) / ncol)
     for nm in noms:
-        for quoi, fn, lim, lab in (("z", "vorticite", a.zlim, f"ζ/f à {-g.RC[kmod]:.0f} m ; noir : cœur cyclonique détecté"),
+        for quoi, fn, lim, lab in (("z", "vorticite", a.zlim, f"ζ/f à {-g.RC[kmod]:.0f} m ; noir : cœur cyclonique détecté (tirets : ζ > {a.seuil_patch:g} f)"),
                                    ("d", "divergence", None, f"divergence / f à {-g.RC[kmod]:.0f} m")):
             if quoi == "d":
                 vals = np.concatenate([cartes[nm][it][1][np.ix_(jb, ib)].ravel() for _, it in phs])
@@ -307,7 +316,7 @@ def main():
             for ax in axs.ravel()[len(phs):]:
                 ax.set_visible(False)
             for ax, (h, it) in zip(axs.ravel(), phs):
-                zr, dvr, u, v, cc = cartes[nm][it]
+                zr, dvr, u, v, cc, pm = cartes[nm][it]
                 q = (zr if quoi == "z" else dvr)[np.ix_(jb, ib)]
                 pcm = ax.pcolormesh(X, Y, q, cmap="RdBu_r", vmin=-lim, vmax=lim, shading="auto")
                 ax.contour(X, Y, wet[np.ix_(jb, ib)].astype(float), [0.5], colors="0.3", linewidths=.6)
@@ -316,6 +325,7 @@ def main():
                     ax.quiver(X[::st], Y[::st], uc[::st, ::st], vc[::st, ::st], scale=12, width=.004)
                     if cc is not None:
                         ax.contour(X, Y, cc[np.ix_(jb, ib)].astype(float), [0.5], colors="k", linewidths=.9)
+                        ax.contour(X, Y, pm[np.ix_(jb, ib)].astype(float), [0.5], colors="k", linewidths=.7, linestyles="--")
                 ax.plot(xt / 1e3, yt / 1e3, "g+", ms=9); ax.plot(xm / 1e3, ym / 1e3, "k^", ms=5)
                 ax.set_aspect(1); ax.set_xlim(box[0] / 1e3, box[1] / 1e3); ax.set_ylim(box[2] / 1e3, box[3] / 1e3)
                 ax.set_title(f"{nm} — BM {h:+.1f} h", fontsize=9)
@@ -346,7 +356,7 @@ def main():
                 hi += 1
             rk = r[o[k]]
             resume[nm].append(dict(cycle=c, h=h[k], duree=h[hi] - h[lo] if gam[k] > 0 else 0.0, **{x: rk[x] for x in
-                              ("gam", "D", "romax", "ro90", "V", "x", "y", "largeur", "frac", "gam_anti", "x_anti", "y_anti", "umax")}))
+                              ("gam", "D", "gam5", "D5", "romax", "ro90", "V", "x", "y", "largeur", "frac", "gam_anti", "x_anti", "y_anti", "umax")}))
     ax[0].set_ylabel("Γ cyclone (10³ m²/s)"); ax[1].set_ylabel("diamètre équivalent (m)")
     ax[2].set_ylabel("ζ/f max du cœur"); ax[3].set_ylabel("divergence rms / f (fenêtre)")
     ax[3].set_xlabel("heure par rapport à la basse mer au mouillage (h)")
@@ -356,7 +366,7 @@ def main():
     fig.tight_layout(); fig.savefig(os.path.join(od, "fig_anse_series.png"), dpi=100); plt.close(fig)
 
     with open(os.path.join(od, "anse_detection.csv"), "w", newline="") as fh:
-        cols = ["run", "cycle", "t", "h", "gam", "D", "romax", "ro90", "V", "x", "y", "largeur", "frac",
+        cols = ["run", "cycle", "t", "h", "gam", "D", "gam5", "D5", "romax", "ro90", "V", "x", "y", "largeur", "frac",
                 "gam_anti", "x_anti", "y_anti", "div_rms", "umax"]
         w = csv.writer(fh); w.writerow(cols)
         for nm in noms:
@@ -432,6 +442,7 @@ def main():
                          f"D {r['D']:.0f} m ({100 * r['frac']:.0f} % de la largeur {r['largeur']:.0f} m), zeta/f max {r['romax']:.1f} "
                          f"(90e centile {r['ro90']:.1f}), V ~ {r['V']:.2f} m/s, present {r['duree']:.1f} h (Gamma > 25 % du max), "
                          f"centre {pos(r['x'], r['y'])} ; |u| max fenetre {r['umax']:.2f} m/s")
+            lines.append(f"{'':10s}   zone zeta > {a.seuil_patch:g} f autour du coeur : D {r['D5']:.0f} m, Gamma {r['gam5'] / 1e3:.2f}e3 m2/s")
             if r["gam_anti"] < 0:
                 lines.append(f"{'':10s}   anticyclone le plus fort au meme instant : Gamma {r['gam_anti'] / 1e3:.2f}e3 m2/s, "
                              f"centre {pos(r['x_anti'], r['y_anti'])}")

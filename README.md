@@ -256,7 +256,7 @@ Par défaut : fenêtre des figures d'observation (69,917-69,850 O, 48,167-48,222
 
 | Fichier | Contenu |
 | --- | --- |
-| `fig_anse_vorticite_<nom>.png` | ζ/f de surface (±20, comme les observations) et flèches, de BM −4 h à BM +1,5 h toutes les 30 min (`--heures`, `--pas`) ; contour noir : cœur cyclonique détecté |
+| `fig_anse_vorticite_<nom>.png` | ζ/f de surface (±20, comme les observations) et flèches, de BM −4 h à BM +1,5 h toutes les 30 min (`--heures`, `--pas`) ; contour noir : cœur cyclonique détecté ; tirets : zone ζ > 5 f qui le contient (`--seuil-patch`) |
 | `fig_anse_divergence_<nom>.png` | divergence/f de surface aux mêmes heures (bandes des ondes internes, si résolues) |
 | `fig_anse_series.png` | circulation, diamètre, ζ/f max du cyclone et divergence rms dans la fenêtre, en fonction de l'heure par rapport à la BM, un trait par cycle |
 | `fig_anse_mouillage.png` | η et diagramme temps-profondeur de w* et des isohalines au mouillage (instantanés 3D) |
