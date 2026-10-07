@@ -93,6 +93,12 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
 - **η aux OB en z*.** Sans fichier OB*eta, obcs_calc.F met OB*eta = 0 et update_etah.F l'applique : η = 0 dans les cellules OB, facteur z* = 1 aux faces OB. Le débit imposé vaut donc exactement u·A (hypothèse de gen_testcase.py et s05). OB*etaFile n'est permis qu'avec nonlinFreeSurf ≠ 0 (obcs_check.F).
 - **Bogue checkpoint69k.** obcs_apply_r_star.F, OB N et S : le facteur z* lit OBNeta(j) et OBSeta(j) (j = OB_Jn, OB_Js+1) au lieu de l'indice i. Avec des fichiers OB*eta, le facteur utilise la valeur d'un autre point (0 dans nos fichiers) : l'enfant A du cas test perdait 115 m³/s à l'OB sud (−5 cm/cycle). obcs_apply_surf_dr.F est correct. Correctif : copie corrigée dans code/ (gen_enfant.py le fait).
 - **Non hydrostatique.** OB*wFile n'est permis qu'avec nonHydrostatic (obcs_check.F) ; w est imposé dans la cellule OB (obcs_apply_w.F). nonlinFreeSurf ≠ 0 est refusé avec le solveur 3D. Les facteurs implicitNHPress, implicSurfPress, implicDiv2DFlow doivent être non nuls (défaut 1). implicitViscosity ne s'applique pas à w (calc_gw.F) : la viscosité verticale de w, GGL90 compris, est explicite.
+- **Frottement aux parois et au fond (vérifié 2026-10-07 : set_defaults.F, mom_fluxform.F, mom_u_sidedrag.F, mom_u_botdrag_coeff.F).**
+  - Par défaut, MITgcm met no_slip_sides et no_slip_bottom à .TRUE. et sideDragFactor = 2. Nos runs mettent les deux à .FALSE.
+  - **Fond** : no_slip_bottom = .FALSE. retire seulement le terme visqueux u/(dz/2). Le frottement quadratique bottomDragQuadratic·|u|·u (2,5e-3) s'applique toujours à la cellule du fond.
+  - **Côtes** : avec no_slip_sides = .FALSE., la contrainte aux parois latérales est nulle et rien n'agit sur la côte en escalier.
+  - Avec no_slip_sides = .TRUE., chaque face fermée reçoit une contrainte visqueuse ≈ sideDragFactor · ν_h · u / Δ (vitesse fantôme −u avec le facteur 2), où ν_h est la viscosité horizontale au coin (ici Smagorinsky). Ce n'est pas une loi de paroi : le résultat dépend de ν_h et de la maille.
+  - 0 < sideDragFactor < 2 donne une paroi partiellement glissante.
 - **WVEL en z*.** C'est la vitesse à travers les surfaces r*. Vitesse vraie : w = w*(1 + η/H) + (1 − z/H)·∂η/∂t (z profondeur de l'interface). L'écart, de l'ordre de Aω ≈ 2e-4 m/s, n'est pas négligeable devant w.
 
 ## Sorties et diagnostics (décidé 2026-09-24)
