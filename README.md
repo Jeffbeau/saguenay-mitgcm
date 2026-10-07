@@ -19,7 +19,7 @@ Configuration MITgcm (checkpoint69k) du fjord du Saguenay et diagnostics tourbil
 | `sagdiag/data.diagnostics.mini_recommande` | Sorties recommandées pour le mini |
 | `cas_test/` | Générateur `gen_testcase.py`, `code/`, namelists |
 | `resultats_cas_test/` | Figures, tableaux et résumé du cas test |
-| `imbrication/` | Extraction parent → enfant (OBCS hors ligne, conditions initiales) et contrôle de cohérence |
+| `imbrication/` | Extraction parent → enfant (OBCS hors ligne, conditions initiales), contrôle de cohérence, analyses au seuil (`seuil_nh.py`) et au tourbillon de l'Anse-de-Roche (`tourbillon_anse.py`) |
 | `cas_test/gen_enfant.py` | Enfant du cas test : A hydrostatique z*, B non hydrostatique (`--nh`) |
 
 Seuls numpy, scipy et matplotlib sont requis. Aucune dépendance à MITgcmutils.
@@ -243,3 +243,24 @@ Puis, pour chaque run, compilation `genmake2 -mpi`, essai court et `nohup mpirun
 Au cap, `seuil_nh.py` demande `--pointe-lonlat -69.8947 48.2166 --pipeline pipeline_grille/output_mini25_cap --rayon-pointe 600` : sans `--pipeline`, l'origine est celle du mini et le point tombe hors du domaine. Détection : `sagdiag_run.py RUN --skip 0 --level 0 --min-diam 4 --sans-3d` (un seul cycle exploitable : pas d'énergétique).
 
 Disque (cap, 160×200×32, sorties float32) : state3D à 930 s ≈ 2,4 Go par run de 2 cycles, le reste ≈ 0,7 Go. Les analyses n'utilisent que le 2e cycle de state3D : celui du 1er cycle peut être effacé après le run. Avec peu de place, mettre `frequency(3) = -1860.` dans `input/data.diagnostics` avant le lancement (1,2 Go ; `seuil_nh.py` prend les instantanés communs aux deux runs).
+
+## Tourbillon de l'Anse-de-Roche et mouillage ADCP (`tourbillon_anse.py`)
+
+Compare un run aux observations de l'utilisateur : cyclone de fin de jusant au sud de l'Anse-de-Roche (dérive de glace, mars 2019 et 2021) et trains d'ondes internes au mouillage ADCP du 4 juillet 2018. Le tourbillon (~1 km) est résolu à 50 m : le run `enfantA_v3` suffit, sans nouveau calcul.
+
+```bash
+python3 imbrication/tourbillon_anse.py ~/runs/enfantA_v3/run --noms A --origine-utm 430800 5330800
+```
+
+Par défaut : fenêtre des figures d'observation (69,917-69,850 O, 48,167-48,222 N), cible 48,200 N 69,882 O (rayon de recherche 1 200 m), mouillage 48,1980 N 69,87735 O, niveau 0 de `lev2D` (surface), `--skip 1` (le 1er cycle complet est ignoré). La basse mer (BM) est prise au mouillage dans `eta2D`, cycle par cycle. Deux runs A et B sur la même grille : `RUN_A RUN_B --noms A B`. Origine du run : `--origine-utm` (coin sud-ouest de l'enfant en UTM 19N), sinon `grids.npz` de `--pipeline` et `enfant.json`. La conversion lon/lat ↔ UTM est intégrée (pas de pyproj). Sinon : `--fenetre-xy`, `--cible-xy`, `--mouillage-xy` (m, repère du run). Dans `DERNIER_RUN/diag/` :
+
+| Fichier | Contenu |
+| --- | --- |
+| `fig_anse_vorticite_<nom>.png` | ζ/f de surface (±20, comme les observations) et flèches, de BM −4 h à BM +1,5 h toutes les 30 min (`--heures`, `--pas`) ; contour noir : cœur cyclonique détecté |
+| `fig_anse_divergence_<nom>.png` | divergence/f de surface aux mêmes heures (bandes des ondes internes, si résolues) |
+| `fig_anse_series.png` | circulation, diamètre, ζ/f max du cyclone et divergence rms dans la fenêtre, en fonction de l'heure par rapport à la BM, un trait par cycle |
+| `fig_anse_mouillage.png` | η et diagramme temps-profondeur de w* et des isohalines au mouillage (instantanés 3D) |
+| `anse.txt` | par cycle : Γ max et son heure, diamètre (et % de la largeur du fjord), ζ/f max, V ~ Γ/(πD), durée de vie, centre en lon/lat, anticyclone le plus fort au même instant ; écart entre cycles des heures de maximum (verrouillage de phase) ; pycnocline et c₁ au mouillage |
+| `anse_detection.csv` | la détection à chaque instantané 2D |
+
+Détection : cœur Okubo-Weiss (W < −0,2 σ_W, ζ > 0,2 f) dont le centre (pondéré par ζ) est à moins de `--rayon-cible` de la cible. Mémoire : un instantané à la fois. Test sur un faux run (cyclone de Rankine R = 450 m, V = 0,6 m/s, maximum imposé à BM −0,5 h) : ζ/f 24,7 (théorie 24,7), D 894 m, Γ 1,59e3 m²/s (théorie 1,70e3), maximum retrouvé à BM −0,5 h ; divergence nulle à 1e-5 f près sur un champ non divergent en grille C. À 930 s, le mouillage virtuel ne voit pas les ondes de 5-6 min : il situe la pycnocline et la phase de marée.

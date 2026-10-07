@@ -1,4 +1,4 @@
-# Configuration MITgcm Saguenay : décisions et état (2026-10-06)
+# Configuration MITgcm Saguenay : décisions et état (2026-10-07)
 
 Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3fb70c27403
 
@@ -16,6 +16,19 @@ Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-
 - Le profil lite (5 M points) a été tué par manque de mémoire (OOM) sur 3 processus, d'où la création du profil mini.
 - Pas d'Ubuntu/WSL sur le poste du travail.
 - Python sur la VM : dans un venv (Ubuntu 24.04 refuse pip dans le Python système ; un NumPy 2 installé par pip à côté de rasterio d'apt casse l'import). setup_mitgcm.sh n'utilise plus pip hors venv.
+
+## Questions scientifiques (recadrées le 2026-10-07, observations de l'utilisateur)
+Observations de l'utilisateur :
+- **Tourbillon de l'Anse-de-Roche** : courants de surface mesurés par la dérive de la glace (13 mars 2019, 16 et 17 mars 2021). C'est un cyclone qui se détache de la côte juste au sud de l'Anse-de-Roche en fin de jusant. Centre ~48,200 N 69,882 O (UTM 434,46 / 5338,91 km ; repère du run v3 : x 3662, y 8106 m), à ~2,5 km en amont du col du 2e seuil. Diamètre ~1 km, presque toute la largeur du fjord ; ζ/f ≈ 20-30 ; vitesses 0,4-0,8 m/s, d'où Ro ≫ 1 et Γ ~ 2e3 m²/s. Visible autour de la basse mer. Un anticyclone au sud, vers le col, apparaît en 2021.
+- **Ondes internes** : ADCP du 4 juillet 2018 au point 48,1980 N 69,87735 O (UTM 434,80 / 5338,68 km ; run v3 : x 4005, y 7880 m). Trains d'ondes de dépression : déplacement ~10 m, période ~5-6 min, w ±0,1 m/s, u' −0,2 à −0,6 m/s, dans les 15 m du haut. En surface, bandes de divergence et de convergence visibles dans la glace.
+
+Ce n'est **pas** le tourbillon de Livernoche (cap de la Pointe-aux-Crêpes, r ~115 m) : celui-là est abandonné, ainsi que la zone 25 m « cap ».
+
+- **Q1. Tourbillon de l'Anse-de-Roche.** Le modèle produit-il ce cyclone de fin de jusant ? On mesure la position, le diamètre par rapport à la largeur, ζ/f, Γ, la phase d'apparition par rapport à la basse mer, la durée de vie et la dérive. Mécanisme : décollement de la couche limite sur la côte, ou jet de jusant qui sort du col ? Verrouillage de phase d'un cycle à l'autre ? À 50 m, il fait ~20 mailles de diamètre : il est résolu. Outil : `imbrication/tourbillon_anse.py` (conversion UTM autonome, identique à pyproj à < 1 mm). Attention : le tourbillon fermé de jusant vu au cap dans l'enfant 50 m v3 (anticyclonique, centre UTM 433,5 / 5340,0, dans l'anse au sud du cap) est à ~1,4 km au nord-ouest de la cible et de signe opposé : ce n'est pas le tourbillon de l'utilisateur. Reste à voir s'il existe un cyclone à la cible, vers la basse mer.
+- **Q2. Trains d'ondes internes au mouillage.** Où et à quelle phase se forment-ils : en amont du col, ou libérés par le ressaut ? On cherche la signature au mouillage (w alterné, déplacement ~10 m, quelques minutes) et en surface (bandes de divergence), en comparant A et B. Il faut ~25 m, du non hydrostatique (longueur d'onde estimée ~150-300 m) et des sorties toutes les 30-60 s.
+- **Q3. Couplage.** Les ondes traversent-elles le tourbillon, ou sont-elles modifiées par lui ? Le dipôle (anticyclone près du col) est-il lié au jet de jusant ?
+- **Stratification.** Le tourbillon est observé en hiver sous la glace, les ondes en été. Le profil analytique d'été (pycnocline à 6 m, épaisseur ~2,5 m) sert pour la 1re passe ; un profil d'hiver viendra en sensibilité.
+- **Zone 25 m « anse » (proposée).** Emprise x 432,0-437,6, y 5335,6-5341,6 km (224×240×32), imbriquée dans l'enfant 50 m v3. Elle couvre le tourbillon, le mouillage et le côté amont du col, à ≥ 1,5 km de l'éponge. Elle remplace les zones « seuil » et « cap » de `mini25`. Préalable : l'imbrication validée par le nouvel `extraire_obcs.py` (bilan < 3 %, `comparer.py` < 5 %). Sorties : 1er cycle grossier, pickup, puis 2e cycle avec du 2D de surface toutes les 60 s. Sortie régionale de type « mouillage virtuel » à vérifier dans le source 69k.
 
 ## Décisions
 - Imbrication unidirectionnelle hors ligne via OBCS : un parent à 100 m sur tout le fjord et un bout de l'estuaire, un enfant à 25 m sur la zone des seuils.

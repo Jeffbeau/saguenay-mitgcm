@@ -4,7 +4,7 @@ Contexte et règles pour Claude Code. À lire au début de chaque session.
 
 ## Objectif
 
-Configuration MITgcm (checkpoint69k) haute résolution du fjord du Saguenay : simuler des cycles de marée M2 en 3D et diagnostiquer la dynamique des tourbillons. L'approche est phénoménologique : on cherche à identifier le phénomène, pas à reproduire le détail. Des forçages et conditions initiales approximatifs sont acceptés.
+Configuration MITgcm (checkpoint69k) haute résolution du fjord du Saguenay : simuler des cycles de marée M2 en 3D et diagnostiquer la dynamique des tourbillons. Cibles (observations de l'utilisateur, voir « Questions scientifiques » dans `docs/decisions.md`) : le cyclone de fin de jusant de l'Anse-de-Roche (~48,200 N 69,882 O, D ~1 km, ζ/f ~20-30) et les trains d'ondes internes au mouillage ADCP (48,1980 N 69,87735 O). Le tourbillon de Livernoche (cap de la Pointe-aux-Crêpes) n'est plus visé. L'approche est phénoménologique : on cherche à identifier le phénomène, pas à reproduire le détail. Des forçages et conditions initiales approximatifs sont acceptés.
 
 ## Règles de travail
 
@@ -65,7 +65,7 @@ Cahier des charges : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3f
 
 ## Prochaines tâches
 
+- **Q1 sans nouveau run :** `python3 imbrication/tourbillon_anse.py ~/runs/enfantA_v3/run --noms A --origine-utm 430800 5330800`, puis comparer `diag/anse.txt` et `fig_anse_vorticite_A.png` aux observations (vort_3pan).
 - Figures pour présenter les tests (grappe en vue) : `sagdiag/cartes_coupes.py ~/runs/enfantA_v3/run --origine-utm 430800 5330800 --gif`, puis `sagdiag/animations.py` (mêmes options) : w, vorticité, échelles, coût extrapolé (seul run restant sur la VM).
-- Relancer le mini sur 6 cycles avec `sagdiag/data.diagnostics.mini_recommande` (il sert de parent : state3D à 930 s avec WVEL, eta2D à 360 s), puis analyser avec `--skip 2`.
-- Enfants 25 m (`mini25`, parent `~/runs/enfantA_v3`) : le cap B a tourné, mais l'imbrication échoue (marée +13,6 %, bilan de volume de l'extraction 14,3 %). Ré-extraire A et B avec le nouvel `extraire_obcs.py` (ligne du parent sur tout le côté), vérifier bilan < 3 % dans `obcs_rapport.txt`, puis relancer A (z*, référence en surface) et B. Disque de la VM presque plein : voir `docs/decisions.md`. Analyses au cap : `comparer.py`, `seuil_nh.py --niveau 0/1/2 --pointe-lonlat -69.8947 48.2166 --pipeline pipeline_grille/output_mini25_cap --rayon-pointe 600`, même calcul sur le 50 m, `sagdiag_run.py --skip 0 --level 0 --min-diam 4 --sans-3d` ; cibles Livernoche : r ~115 m, V ~0,11 m/s, Γ ~80 m²/s. Ensuite : zone seuil à 25 m.
+- **Zone 25 m « anse »** (x 432,0-437,6, y 5335,6-5341,6 km) : l'ajouter à `mini25`, extraire avec le nouvel `extraire_obcs.py` (bilan < 3 % dans `obcs_rapport.txt`), puis A et `comparer.py` < 5 %, puis B. Sorties haute fréquence au 2e cycle pour les ondes (Q2) : vérifier dans le source 69k les options de sortie régionale.
 - Adapter `sagdiag/coupes_mini_modele.json` aux vrais seuils du mini.
