@@ -38,6 +38,18 @@ Ce n'est **pas** le tourbillon de Livernoche (cap de la Pointe-aux-Crêpes, r ~1
   - **Lecture :** le modèle a la bonne source de vorticité (la couche limite de la rive est au jusant), mais elle ne s'enroule pas en un tourbillon de ~1 km. Le run utilise des **parois glissantes** (`no_slip_sides = .FALSE.`), donc aucune vorticité n'est produite à la paroi. Seuls le frottement de fond sur les bancs et Smagorinsky (viscC2smag 2,2) créent du cisaillement.
   - L'outil mesure aussi la zone ζ > 5 f autour du cœur (`--seuil-patch`), plus proche de la « tache rouge » observée que le cœur Okubo-Weiss.
 - **Q1, sensibilité suivante (proposée) : parois non glissantes**, sur le même enfant 50 m v3. On reprend son `input/` (OB*.bin) et son exécutable : seul `data` change (`no_slip_sides = .TRUE.`). Relance depuis la pickup du v3 à l'itération 17 856 (t = 89 280 s, Δt 5 s, pChkptFreq = 44 640 s) pour 1 cycle (nIter0 = 17856, nTimeSteps = 8928) : on compare le 3e cycle (cycle 2) au v3, avec `--skip 0`. La basse mer tombe ~9 h après la relance, ce qui laisse le temps aux couches limites de paroi de s'établir. Coût ≈ 22 h sur la VM, sorties ≈ 1,2 Go avec state3D à 1860 s ; 6,8 Go libres le 2026-10-07. À comparer : D, Γ et la zone ζ > 5 f à BM −1 h. Ensuite, si besoin : amplitude de vives-eaux (marnage du jour des observations), viscC2smag plus faible, stratification d'hiver.
+- **Q1, parois non glissantes (v3_noslip, 2026-10-08) : changement net, dans le sens des observations.**
+  - Relance depuis la pickup 17856, cycle 2, comparé au v3 glissant sur le même cycle.
+  - Γ max 1,27e3 m²/s (contre 0,10e3 en glissant) à BM −1,5 h, cœur Okubo-Weiss D 930 m (47 % d'une largeur de 2 000 m), V ~ Γ/(πD) 0,43 m/s.
+  - Structure présente 3,9 h (Γ > 25 % du max) au lieu de 0,8 h.
+  - Centre 48,1940 N 69,8695 O, soit ~1 km à l'est et ~0,7 km au sud de la cible observée : il reste près de la rive est.
+  - Vitesse max dans la fenêtre 1,09 m/s (contre 0,77) : le jet de jusant est plus concentré au milieu du chenal.
+  - L'anticyclone du cap se renforce (−0,84e3 m²/s). Le mouillage virtuel ne change pas (w* rms 12 mm/s, pycnocline 6 m).
+  - **Ordre de grandeur des observations atteint** : Γ ~1-2e3, D ~1 km, V 0,4-0,8 m/s.
+  - **Réserves** :
+    - De BM −4 à −1,6 h, ζ/f max du cœur atteint 100-115 : c'est la couche limite collée à la paroi (ζ ~ u/Δ), pas encore un tourbillon détaché. Le saut à BM −1,6 h (ζ/f ~30, D ~900 m) marque probablement le détachement, à confirmer sur `fig_anse_vorticite_noslip.png`.
+    - La zone ζ > 5 f (D 2,2 km, Γ 6,2e3) englobe la bande de rive collée et la surestime ; elle ne vaut que pour un tourbillon détaché.
+    - La contrainte de paroi dépend de ν_h (Smagorinsky) et de Δ : à vérifier à 25 m, et avec 0 < sideDragFactor < 2.
 - **Stratification.** Le tourbillon est observé en hiver sous la glace, les ondes en été. Le profil analytique d'été (pycnocline à 6 m, épaisseur ~2,5 m) sert pour la 1re passe ; un profil d'hiver viendra en sensibilité.
 - **Zone 25 m « anse » (proposée).** Emprise x 432,0-437,6, y 5335,6-5341,6 km (224×240×32), imbriquée dans l'enfant 50 m v3. Elle couvre le tourbillon, le mouillage et le côté amont du col, à ≥ 1,5 km de l'éponge. Elle remplace les zones « seuil » et « cap » de `mini25`. Préalable : l'imbrication validée par le nouvel `extraire_obcs.py` (bilan < 3 %, `comparer.py` < 5 %). Sorties : 1er cycle grossier, pickup, puis 2e cycle avec du 2D de surface toutes les 60 s. Sortie régionale de type « mouillage virtuel » à vérifier dans le source 69k.
 

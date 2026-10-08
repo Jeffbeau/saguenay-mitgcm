@@ -66,7 +66,7 @@ Cahier des charges : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3f
 
 ## Prochaines tâches
 
-- **Q1, fait (50 m, parois glissantes) :** cisaillement cyclonique de la rive est au jusant, mais pas de tourbillon de ~1 km (voir `docs/decisions.md`). Suite : enfant 50 m v3 avec `no_slip_sides = .TRUE.`, relancé depuis sa pickup 17856 pour 1 cycle (`~/runs/v3_noslip`), puis `tourbillon_anse.py ~/runs/enfantA_v3/run ~/runs/v3_noslip/run --noms glissant noslip --skip 0 --origine-utm 430800 5330800`.
+- **Q1 (50 m) :** en glissant, cisaillement de rive sans tourbillon. En non glissant (`~/runs/v3_noslip`), Γ 1,27e3 m²/s, D 930 m, V 0,43 m/s à BM −1,5 h, 1 km à l'est de la cible (voir `docs/decisions.md`). À faire : confirmer le détachement sur `fig_anse_vorticite_noslip.png`, puis la sensibilité sideDragFactor et le test à 25 m (zone « anse », non glissant).
 - Figures pour présenter les tests (grappe en vue) : `sagdiag/cartes_coupes.py ~/runs/enfantA_v3/run --origine-utm 430800 5330800 --gif`, puis `sagdiag/animations.py` (mêmes options) : w, vorticité, échelles, coût extrapolé (seul run restant sur la VM).
 - **Zone 25 m « anse »** (x 432,0-437,6, y 5335,6-5341,6 km) : l'ajouter à `mini25`, extraire avec le nouvel `extraire_obcs.py` (bilan < 3 % dans `obcs_rapport.txt`), puis A et `comparer.py` < 5 %, puis B. Sorties haute fréquence au 2e cycle pour les ondes (Q2) : vérifier dans le source 69k les options de sortie régionale.
 - Adapter `sagdiag/coupes_mini_modele.json` aux vrais seuils du mini.
