@@ -376,7 +376,10 @@ def main():
     # --- mouillage virtuel (3D, dernier cycle)
     moor = None
     if pre3:
-        it3 = np.array(sd.list_iters(runs[0], pre3)); t3 = it3 * g.dt
+        it3 = np.array(sd.list_iters(runs[0], pre3))
+        for r in runs[1:]:                                # instantanes communs (frequences 3D differentes)
+            it3 = np.intersect1d(it3, sd.list_iters(r, pre3))
+        t3 = it3 * g.dt
         s3 = np.floor(t3 / T_M2 + 1e-9).astype(int) == dernier
         it3, t3 = it3[s3], t3[s3]
         kk = np.where(g.maskC[:, jm, im])[0]
