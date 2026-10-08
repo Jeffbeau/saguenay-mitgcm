@@ -48,6 +48,14 @@ Ce n'est **pas** le tourbillon de Livernoche (cap de la Pointe-aux-Crêpes, r ~1
   - **Ordre de grandeur des observations atteint** : Γ ~1-2e3, D ~1 km, V 0,4-0,8 m/s.
   - **Réserves** :
     - De BM −4 à −1,6 h, ζ/f max du cœur atteint 100-115 : c'est la couche limite collée à la paroi (ζ ~ u/Δ), pas encore un tourbillon détaché. Le saut à BM −1,6 h (ζ/f ~30, D ~900 m) marque probablement le détachement, à confirmer sur `fig_anse_vorticite_noslip.png`.
+  - **Lecture de `fig_anse_vorticite_noslip.png` (2026-10-08) : recirculation détachée, puis migration vers la position observée.**
+    - BM −4 à −2,5 h : couches limites collées aux deux rives (rouge à l'est, bleu à l'ouest). Le jet de jusant sort du rétrécissement entre le cap et l'Anse-de-Roche (y ≈ 9-10 km), avec une couche de cisaillement cyclonique sur son flanc est.
+    - BM −2 à −1,5 h : la couche limite de la rive est **change de signe** (bleu, y 5-8,5 km), donc le courant remonte le long de la rive est. L'écoulement a **décollé** et une recirculation cyclonique fermée (D ~1 km) occupe la moitié est, entre le jet et la rive : c'est le maximum détecté (Γ 1,27e3 m²/s).
+    - BM −1 à −0,5 h : la tache se contracte et remonte vers le nord, près du mouillage (x ~4,2, y ~8,1 km).
+    - BM 0 à +0,5 h : tache compacte (~0,5-0,7 km) qui glisse vers l'ouest, **jusqu'à la cible observée** (x 3,6-3,9, y 8,3-8,6 km), au milieu du fjord. Un anticyclone se trouve au sud (x 4-5, y 5,5-7 km), comme le dipôle de 2021.
+    - BM +1 h : la tache s'allonge et s'affaiblit ; disparue à BM +1,5 h, quand le flot s'installe.
+    - **Cohérent avec les observations** : à la basse mer et juste avant ou après (13 mars 2019 à la BM, 16 mars 2021 juste après, 17 mars 2021 juste avant), un cyclone au milieu du fjord au nord du 2e seuil, avec un anticyclone au sud.
+    - Le maximum de Γ (BM −1,5 h) correspond au stade « recirculation à l'est ». La comparaison aux observations se fait à BM ±0,5 h (`anse_detection.csv`).
     - La zone ζ > 5 f (D 2,2 km, Γ 6,2e3) englobe la bande de rive collée et la surestime ; elle ne vaut que pour un tourbillon détaché.
     - La contrainte de paroi dépend de ν_h (Smagorinsky) et de Δ : à vérifier à 25 m, et avec 0 < sideDragFactor < 2.
 - **Stratification.** Le tourbillon est observé en hiver sous la glace, les ondes en été. Le profil analytique d'été (pycnocline à 6 m, épaisseur ~2,5 m) sert pour la 1re passe ; un profil d'hiver viendra en sensibilité.
