@@ -61,6 +61,7 @@ Cahier des charges : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3f
 - **Bogue z* aux OB N/S.** `obcs_apply_r_star.F` lit OBNeta(j)/OBSeta(j) au lieu de (i). Tout run z* avec fichiers OB*eta et une OB N ou S embarque la copie corrigée (voir `gen_enfant.py`).
 - **Coins OB.** Une face normale au coin de deux frontières peut déboucher sur une cellule OB : elle ne compte pas dans le bilan de l'intérieur.
 - **NH et viscosité.** implicitViscosity ne s'applique pas à w : GGL90viscMax ≤ 0,2·dz_min²/Δt en non hydrostatique. OB*wFile exige nonHydrostatic ; OB*etaFile exige nonlinFreeSurf ≠ 0.
+- **Relance depuis une pickup.** Les fichiers de grille (XC, hFacC, Depth, RC…) ne sont écrits que si startTime = baseTime (`initialise_fixed.F`) : dans le dossier du run relancé, faire des liens vers ceux du run d'origine avant les analyses.
 - **WVEL en z\*.** C'est la vitesse r* : w vraie = w*(1 + η/H) + (1 − z/H)·∂η/∂t.
 
 ## Prochaines tâches

@@ -99,6 +99,7 @@ Emplacement : OneDrive …/Personnel/MITGCM/pipeline_grille/ (config.py, gridlib
   - **Côtes** : avec no_slip_sides = .FALSE., la contrainte aux parois latérales est nulle et rien n'agit sur la côte en escalier.
   - Avec no_slip_sides = .TRUE., chaque face fermée reçoit une contrainte visqueuse ≈ sideDragFactor · ν_h · u / Δ (vitesse fantôme −u avec le facteur 2), où ν_h est la viscosité horizontale au coin (ici Smagorinsky). Ce n'est pas une loi de paroi : le résultat dépend de ν_h et de la maille.
   - 0 < sideDragFactor < 2 donne une paroi partiellement glissante.
+- **Grille et relance.** WRITE_GRID n'est appelé que si startTime = baseTime ou si debugLevel ≥ debLevA (`initialise_fixed.F`). Un run relancé depuis une pickup (nIter0 ≠ 0) n'écrit ni XC, ni hFacC, ni Depth, ni RC, etc. Pour les analyses, faire des liens vers les fichiers de grille du run d'origine (même grille).
 - **WVEL en z*.** C'est la vitesse à travers les surfaces r*. Vitesse vraie : w = w*(1 + η/H) + (1 − z/H)·∂η/∂t (z profondeur de l'interface). L'écart, de l'ordre de Aω ≈ 2e-4 m/s, n'est pas négligeable devant w.
 
 ## Sorties et diagnostics (décidé 2026-09-24)
