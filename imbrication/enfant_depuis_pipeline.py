@@ -34,6 +34,8 @@ ap.add_argument("--nh", action="store_true", help="config B : non hydrostatique,
 ap.add_argument("--npx", type=int, default=1, help="processus MPI en x (mpirun -np NPX)")
 ap.add_argument("--nsx", type=int, default=1, help="tuiles par processus en x")
 ap.add_argument("--eponge", type=float, default=1000.0, help="epaisseur de l'eponge (m)")
+ap.add_argument("--no-slip", action="store_true", help="parois laterales non glissantes (no_slip_sides)")
+ap.add_argument("--hf", type=float, default=0.0, help="sortie 2D haute frequence (s), u, v, w a ~1, 5, 10 m")
 ap.add_argument("--mitgcm", default=os.path.expanduser("~/MITgcm"))
 a = ap.parse_args()
 
@@ -56,6 +58,7 @@ dt = a.dt or (5.0 if dx <= 50 else 15.0)
 cfg.ecrire_config(a.enfant, H=H, dx=dx, dz=np.asarray(gc["dz"], float), x0=x0, y0=y0,
                   ob=cfg.frontieres(H > 0), nh=a.nh, dt=dt, t0=a.t0, duree=a.cycles * cfg.T_M2,
                   periode=a.periode, tsref=cfg.tsref_du_parent(data_p), mitgcm=a.mitgcm,
-                  titre=f"Enfant Saguenay {dx:g} m", phys=phys, nsx=a.nsx, npx=a.npx, eponge_m=a.eponge)
+                  titre=f"Enfant Saguenay {dx:g} m", phys=phys, nsx=a.nsx, npx=a.npx, eponge_m=a.eponge,
+                  no_slip=a.no_slip, hf=a.hf)
 print(f"x0={x0:.0f} y0={y0:.0f} m dans le repere du parent (rapport {dxp / dx:g})")
 print(f"Suite : python3 imbrication/extraire_obcs.py {a.parent} {a.enfant}")

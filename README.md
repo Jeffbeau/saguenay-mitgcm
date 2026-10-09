@@ -264,3 +264,51 @@ Par défaut : fenêtre des figures d'observation (69,917-69,850 O, 48,167-48,222
 | `anse_detection.csv` | la détection à chaque instantané 2D |
 
 Détection : cœur Okubo-Weiss (W < −0,2 σ_W, ζ > 0,2 f) dont le centre (pondéré par ζ) est à moins de `--rayon-cible` de la cible. Mémoire : un instantané à la fois. Test sur un faux run (cyclone de Rankine R = 450 m, V = 0,6 m/s, maximum imposé à BM −0,5 h) : ζ/f 24,7 (théorie 24,7), D 894 m, Γ 1,59e3 m²/s (théorie 1,70e3), maximum retrouvé à BM −0,5 h ; divergence nulle à 1e-5 f près sur un champ non divergent en grille C. À 930 s, le mouillage virtuel ne voit pas les ondes de 5-6 min : il situe la pycnocline et la phase de marée.
+
+## Hydraulique du seuil et fronts internes (`ondes_seuil.py`)
+
+Le long du talweg, du rétrécissement cap / Anse-de-Roche jusqu'au bassin aval du col, sur un cycle, en heures depuis la basse mer au mouillage : profondeur de l'interface (isohaline S*), vitesse de la couche de surface, Froude composite à deux couches G (G = 1 : contrôle hydraulique), w* moyen entre 5 et 30 m. Le script ajoute aussi une coupe en travers du fjord par la cible (bombement de l'interface sous le cyclone).
+
+```bash
+python3 imbrication/ondes_seuil.py ~/runs/enfantA_v3/run ~/runs/v3_noslip/run --noms glissant noslip \
+    --origine-utm 430800 5330800 --detection ~/runs/v3_noslip/run/diag/anse_detection.csv
+```
+
+| Fichier | Contenu |
+| --- | --- |
+| `fig_ondes_talweg.png` | Diagrammes temps-distance (un run par colonne). Un front ou un ressaut interne apparaît comme une marche qui se déplace ; la pente donne sa vitesse et son sens. Tirets : col ; pointillé : mouillage ; cercles : cyclone (`--detection`). |
+| `fig_ondes_coupe_<nom>.png` | Coupe transverse par la cible à BM −3, −1,5, −0,5, 0, +0,5 et +1,5 h : vitesse le long du fjord, isohalines, interface (magenta) |
+| `fig_ondes_bombement.png` | Bombement de l'interface à la cible (< 0 : remontée) et profondeur de l'interface au mouillage |
+| `ondes_seuil.txt` | S*, Froude au col (max, part du cycle critique), points critiques en amont et en aval, interface au mouillage, bombement, position du cyclone |
+
+S* vaut par défaut la salinité au maximum de N² au col (`--sstar` pour la fixer). Les profondeurs sont vraies en z* : z = η + r*(1 + η/H). Les instantanés 3D (930 ou 1860 s) suivent les fronts (~0,5 m/s), pas les ondes solitaires de 5-6 min : il faut pour ça le run non hydrostatique à 25 m avec `--hf`. Test sur un faux run (seuil de 15 m, front imposé à 0,5 m/s, dôme sous un cyclone) : le front et le dôme sont retrouvés.
+
+## Enfant 25 m « anse », Config A non glissante (profil `mini25`, `SAG_ZONE=anse`)
+
+La zone couvre le rétrécissement cap / Anse-de-Roche, la rive est où la couche limite décolle, le cyclone, le mouillage et le côté amont du col : x 432,0-437,6 km, y 5335,6-5341,6 km, 224×240×32. Le parent est l'enfant 50 m v3 (glissant, 930 s). L'enfant part de t0 = 89 280 s (cycle 2 du v3, celui de `v3_noslip`) et dure 1 cycle, avec des parois non glissantes et une sortie `hf2D` (u, v, w à ~1, 5 et 9 m) toutes les 120 s.
+
+```bash
+cd ~/saguenay-mitgcm && git pull
+cd pipeline_grille
+for s in s02_grids s03_bathy s04_verify; do SAG_PROFILE=mini25 SAG_ZONE=anse python3 $s.py; done
+# regarder output_mini25_anse/fig_child.png
+cd ..
+python3 imbrication/enfant_depuis_pipeline.py pipeline_grille/output_mini25_anse ~/runs/p25_anse_A \
+    --parent ~/runs/enfantA_v3/run --t0 89280 --cycles 1 --npx 2 --eponge 500 --no-slip --hf 120
+python3 imbrication/extraire_obcs.py ~/runs/enfantA_v3/run ~/runs/p25_anse_A | tail -6
+grep -i "bilan\|hors des points OB" ~/runs/p25_anse_A/obcs_rapport.txt     # bilan < 3 %, sinon ne pas lancer
+cd ~/runs/p25_anse_A && mkdir -p build run && cd build
+~/MITgcm/tools/genmake2 -mpi -rootdir=$HOME/MITgcm -mods=../code && make depend && make -j2
+cd ../run && ln -sf ../input/* . && ln -sf ../build/mitgcmuv .
+```
+
+Essai court (60 pas), puis le vrai run :
+
+```bash
+sed 's/nTimeSteps = 8928,/nTimeSteps = 60,/' ../input/data > data && mpirun -np 2 ./mitgcmuv > output.txt
+grep -i "nan\|error" STDOUT.0000 | head ; grep advcfl STDOUT.0000 | tail -4
+rm -f data STDOUT.* STDERR.* eta2D.* lev2D.* hf2D.* state3D.* mean3D.* flux3D.* && ln -sf ../input/data .
+nohup mpirun -np 2 ./mitgcmuv > output.txt &
+```
+
+Coût : 8 928 pas × 1,72 M points × ~1e-5 cœur.s ≈ 21 h sur 2 cœurs. Disque ≈ 3 Go (state3D à 930 s ≈ 2 Go, hf2D ≈ 0,7 Go). Analyses : `comparer.py` (parent v3), `tourbillon_anse.py` et `ondes_seuil.py` avec `--origine-utm 432000 5335600`. Le parent glissant force un enfant non glissant : les frontières sont à ≥ 1,2 km du décollement, mais il faut l'avoir en tête.

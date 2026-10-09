@@ -221,6 +221,8 @@ if PROFILE == "mini":
 # bathymétrie, même grille verticale) : il n'est pas recalculé. Zone choisie par SAG_ZONE :
 #   seuil : côté aval du 2e seuil (ressaut de jusant, Guay 2023), col à ~0,7 km du bord O ;
 #   cap   : cap de la Pointe-aux-Crêpes (tourbillon de surface, rayon ~115 m, Livernoche 2017).
+#   anse  : cyclone de fin de jusant au sud de l'Anse-de-Roche et mouillage ADCP (observations de
+#           l'utilisateur, 2026-10-07) ; remplace seuil et cap.
 # ---------------------------------------------------------------------------
 if PROFILE == "mini25":
     ZONE = __import__("os").environ.get("SAG_ZONE", "seuil")
@@ -229,8 +231,12 @@ if PROFILE == "mini25":
     #           OB N en amont du haut-fond, OB E dans le chenal aval ; 224 x 256 x 32 (1,84 M points).
     #   cap   : le coude, le cap et l'anse au sud ; OB O dans le bras est-ouest, OB S dans le bras
     #           nord-sud ; 160 x 200 x 32 (1,02 M points).
+    #   anse  : rétrécissement cap / Anse-de-Roche (sortie du jet de jusant), rive est où la couche
+    #           limite décolle, cyclone (48,200 N 69,882 O), mouillage et côté amont du col ;
+    #           224 x 240 x 32 (1,72 M points), à >= 1,2 km des bords de l'enfant 50 m v3.
     ZONES = {"seuil": (434000.0, 439600.0, 5332000.0, 5338400.0),
-             "cap":   (431900.0, 435900.0, 5338400.0, 5343400.0)}
+             "cap":   (431900.0, 435900.0, 5338400.0, 5343400.0),
+             "anse":  (432000.0, 437600.0, 5335600.0, 5341600.0)}
     GRIDS = {"parent": dict(dx=50.0, depuis=(MINI_OUT, "child")),
              "child": dict(dx=25.0, utm=ZONES[ZONE])}
     NR, NSURF, DZ_SURF = 32, 4, 2.0

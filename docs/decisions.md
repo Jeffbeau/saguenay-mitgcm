@@ -58,6 +58,18 @@ Ce n'est **pas** le tourbillon de Livernoche (cap de la Pointe-aux-Crêpes, r ~1
     - Le maximum de Γ (BM −1,5 h) correspond au stade « recirculation à l'est ». La comparaison aux observations se fait à BM ±0,5 h (`anse_detection.csv`).
     - La zone ζ > 5 f (D 2,2 km, Γ 6,2e3) englobe la bande de rive collée et la surestime ; elle ne vaut que pour un tourbillon détaché.
     - La contrainte de paroi dépend de ν_h (Smagorinsky) et de Δ : à vérifier à 25 m, et avec 0 < sideDragFactor < 2.
+- **Q2 recadrée (2026-10-09, avis de l'utilisateur : les ondes du mouillage viennent d'ailleurs).**
+  - Ce qui intéresse l'utilisateur, c'est le système seuil + ondes + tourbillon.
+  - Hypothèses de source pour les ondes du mouillage :
+    - le côté aval du col (ressaut de jusant), libérées vers l'amont quand le courant faiblit ;
+    - le seuil d'entrée ou l'estuaire, 15-20 km plus loin ;
+    - les hauts-fonds du rétrécissement cap / Anse-de-Roche ;
+    - une réflexion sur la pente raide de l'Anse-de-Roche (Bourgault et al. 2011).
+  - Mécanisme classique à tester : un front ou un mascaret interne transporté par l'écoulement (qu'un modèle hydrostatique sait propager) se désagrège en train d'ondes solitaires là où la dispersion non hydrostatique agit.
+  - Conséquences pour les runs :
+    - `ondes_seuil.py` sur les runs 50 m (diagrammes temps-distance de l'interface) dira si des fronts entrent dans la zone et à quelle heure ils passent au mouillage ;
+    - si la source est hors de l'enfant 25 m, le parent hydrostatique doit amener le front par les OB, et l'enfant NH le désagrège.
+- **Enfant 25 m « anse », A (décidé 2026-10-09).** Zone `anse` de `mini25` : x 432,0-437,6, y 5335,6-5341,6 km, 224×240×32. Parent enfant 50 m v3 (glissant, OBCS à 930 s), t0 = 89 280 s, 1 cycle (comparable au cycle 2 du v3 et de `v3_noslip`). Parois non glissantes (`--no-slip`), sortie `hf2D` toutes les 120 s (u, v, w à ~1, 5, 9 m ; numDiags = 27·Nr). C'est aussi le test de robustesse du non glissant (la contrainte de paroi dépend de Δ). La sensibilité sideDragFactor = 1 est reportée. B (NH) viendra ensuite, avec `--hf 60`.
 - **Stratification.** Le tourbillon est observé en hiver sous la glace, les ondes en été. Le profil analytique d'été (pycnocline à 6 m, épaisseur ~2,5 m) sert pour la 1re passe ; un profil d'hiver viendra en sensibilité.
 - **Zone 25 m « anse » (proposée).** Emprise x 432,0-437,6, y 5335,6-5341,6 km (224×240×32), imbriquée dans l'enfant 50 m v3. Elle couvre le tourbillon, le mouillage et le côté amont du col, à ≥ 1,5 km de l'éponge. Elle remplace les zones « seuil » et « cap » de `mini25`. Préalable : l'imbrication validée par le nouvel `extraire_obcs.py` (bilan < 3 %, `comparer.py` < 5 %). Sorties : 1er cycle grossier, pickup, puis 2e cycle avec du 2D de surface toutes les 60 s. Sortie régionale de type « mouillage virtuel » à vérifier dans le source 69k.
 

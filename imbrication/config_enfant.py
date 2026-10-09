@@ -74,22 +74,27 @@ def ecrire(path, txt):
 
 
 def ecrire_config(out, *, H, dx, dz, x0, y0, ob, nh, dt, t0, duree, periode, tsref,
-                  mitgcm, titre, phys=None, nsx=1, npx=1, eponge_m=1000.0):
+                  mitgcm, titre, phys=None, nsx=1, npx=1, eponge_m=1000.0, no_slip=False, hf=0.0):
     """Ecrit out/input (namelists, bathy.bin), out/code et out/enfant.json.
-    H (ny, nx) : profondeur positive (terre = 0) ; x0, y0 : coin sud-ouest dans le repere du parent."""
+    H (ny, nx) : profondeur positive (terre = 0) ; x0, y0 : coin sud-ouest dans le repere du parent.
+    no_slip : parois laterales non glissantes (contrainte visqueuse aux cotes, sideDragFactor = 2).
+    hf : periode (s) d'une liste 2D haute frequence (u, v, w a ~1, 5, 10 m) pour les ondes ; 0 = aucune."""
     ph = dict(PHYS, **(phys or {}))
     ny, nx = H.shape
     nr = len(dz)
     code, inp = os.path.join(out, "code"), os.path.join(out, "input")
     os.makedirs(code, exist_ok=True); os.makedirs(inp, exist_ok=True)
     assert nx % (nsx * npx) == 0, "Nx doit etre divisible par nSx*nPx"
-    for q in (periode, 360.0, 930.0, T_M2):
+    for q in (periode, 360.0, 930.0, T_M2) + ((hf,) if hf else ()):
         assert abs(q / dt - round(q / dt)) < 1e-9, f"{q} s n'est pas un multiple de dt"
     assert abs(t0 / T_M2 - round(t0 / T_M2)) < 1e-9, "t0 doit etre un multiple de T_M2 (phase 0)"
     nstep = int(round(duree / dt))
     nrec = int(round(duree / periode)) + 2
     zc = np.cumsum(dz) - 0.5 * np.asarray(dz)
     lev = [int(np.argmin(np.abs(zc - z))) + 1 for z in (1.0, 10.0, 30.0)]
+    levhf = sorted({int(np.argmin(np.abs(zc - z))) + 1 for z in (1.0, 5.0, 10.0)})
+    if hf:
+        assert abs(T_M2 / hf - round(T_M2 / hf)) < 1e-9, f"hf = {hf} s ne divise pas 44640 s"
     spong = int(round(eponge_m / dx))
     # stabilite de la diffusion verticale explicite de w : nu*dt/dz^2 <= 0.2
     viscmax = 1.0 if not nh else float(f"{0.2 * float(np.min(dz)) ** 2 / dt:.2g}")
@@ -143,7 +148,7 @@ def ecrire_config(out, *, H, dx, dz, x0, y0, ob, nh, dt, t0, duree, periode, tsr
  viscAr = 1.E-5,
  diffKhT = 0., diffKhS = 0.,
  diffKrT = 1.E-6, diffKrS = 1.E-6,
- no_slip_sides = .FALSE.,
+ no_slip_sides = {'.TRUE.' if no_slip else '.FALSE.'},
  no_slip_bottom = .FALSE.,
  bottomDragQuadratic = 2.5E-3,
  vectorInvariantMomentum = .TRUE.,
@@ -219,6 +224,10 @@ def ecrire_config(out, *, H, dx, dz, x0, y0, ob, nh, dt, t0, duree, periode, tsr
  mxlMaxFlag = 2,
  &
 """))
+    liste_hf = "" if not hf else (
+        " fields(1:3,6) = 'UVEL    ','VVEL    ','WVEL    ',\n"
+        f"   levels(1:{len(levhf)},6) = {', '.join(f'{k}.' for k in levhf)},\n"
+        f"   fileName(6) = 'hf2D',\n   frequency(6) = -{hf:.1f},\n   timePhase(6) = 0.,\n")
     open(os.path.join(inp, "data.diagnostics"), "w").write(nml(f"""\
  # Memes sorties que le parent : frequences multiples de dt qui divisent 44640 s
  &DIAGNOSTICS_LIST
@@ -243,7 +252,7 @@ def ecrire_config(out, *, H, dx, dz, x0, y0, ob, nh, dt, t0, duree, periode, tsr
  fields(1:6,5) = 'UVELMASS','VVELMASS','WVELMASS','USLTMASS','VSLTMASS','WSLTMASS',
    fileName(5) = 'flux3D',
    frequency(5) = {T_M2:.1f},
- &
+{liste_hf} &
  &DIAG_STATIS_PARMS
  &
 """))
@@ -278,7 +287,7 @@ CEOP
     for src_h, dst_h, subs in (
             ("model/inc/CPP_OPTIONS.h", "CPP_OPTIONS.h", cpp),
             ("pkg/obcs/OBCS_OPTIONS.h", "OBCS_OPTIONS.h", [("#undef ALLOW_OBCS_SPONGE", "#define ALLOW_OBCS_SPONGE")]),
-            ("pkg/diagnostics/DIAGNOSTICS_SIZE.h", "DIAGNOSTICS_SIZE.h", [("numDiags = 1*Nr", "numDiags = 24*Nr")])):
+            ("pkg/diagnostics/DIAGNOSTICS_SIZE.h", "DIAGNOSTICS_SIZE.h", [("numDiags = 1*Nr", f"numDiags = {27 if hf else 24}*Nr")])):
         fsrc = os.path.join(mitgcm, src_h)
         if not os.path.exists(fsrc):
             print("ATTENTION: options .h non copiees, --mitgcm introuvable:", fsrc)
@@ -307,11 +316,13 @@ CEOP
     desc = dict(nx=nx, ny=ny, dx=dx, dy=dx, x0=x0, y0=y0, dz=[float(v) for v in dz],
                 hFacMin=ph["hFacMin"], hFacMinDr=ph["hFacMinDr"], bathy="input/bathy.bin", ob=ob,
                 t0=t0, duree=duree, periode=periode, zstar=not nh, nonhydrostatique=nh,
-                sponge=spong)
+                sponge=spong, no_slip=no_slip, hf=hf)
     json.dump(desc, open(os.path.join(out, "enfant.json"), "w"), indent=1)
 
     print(f"Config {cfg}")
     print(f"grille {nx}x{ny}x{nr} dx={dx:.0f} m, dt={dt:.0f} s, {nstep} pas ({duree / T_M2:g} cycles)")
     print("OB :", {k: len(v) for k, v in ob.items()}, f"; eponge {spong} cellules ; GGL90viscMax={viscmax}")
+    print(f"parois {'non glissantes' if no_slip else 'glissantes'}"
+          + (f" ; liste hf2D toutes les {hf:g} s, niveaux {levhf}" if hf else ""))
     print(f"-> {out}")
     return desc

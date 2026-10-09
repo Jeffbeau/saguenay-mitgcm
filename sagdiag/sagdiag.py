@@ -163,7 +163,8 @@ def guess_prefixes(info, nr):
     has = lambda v, *n: all(x in v["fields"] for x in n)
     s3 = sorted([p for p, v in snap.items() if v["nz"] == nr and has(v, "UVEL", "VVEL")],
                 key=lambda p: -len(snap[p]["fields"]))
-    l2 = [p for p, v in snap.items() if 1 <= v["nz"] < nr and has(v, "UVEL", "VVEL")]
+    l2 = sorted([p for p, v in snap.items() if 1 <= v["nz"] < nr and has(v, "UVEL", "VVEL")],
+                key=lambda p: (p != "lev2D", p))          # lev2D avant hf2D (sortie haute frequence)
     et = sorted([p for p, v in snap.items() if "ETAN" in v["fields"]],
                 key=lambda p: len(snap[p]["fields"]))
     fl = [p for p, v in info.items() if v["avg"] and has(v, "USLTMASS")]
