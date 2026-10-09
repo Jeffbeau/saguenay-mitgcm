@@ -285,7 +285,7 @@ S* vaut par défaut la salinité au maximum de N² au col (`--sstar` pour la fix
 
 ## Enfant 25 m « anse », Config A non glissante (profil `mini25`, `SAG_ZONE=anse`)
 
-La zone couvre le rétrécissement cap / Anse-de-Roche, la rive est où la couche limite décolle, le cyclone, le mouillage et le côté amont du col : x 432,0-437,6 km, y 5335,6-5341,6 km, 224×240×32. Le parent est l'enfant 50 m v3 (glissant, 930 s). L'enfant part de t0 = 89 280 s (cycle 2 du v3, celui de `v3_noslip`) et dure 1 cycle, avec des parois non glissantes et une sortie `hf2D` (u, v, w à ~1, 5 et 9 m) toutes les 120 s.
+La zone couvre le rétrécissement cap / Anse-de-Roche, la rive est où la couche limite décolle, le cyclone, le mouillage, le col et le bassin aval (ressaut de jusant, source probable des ondes qui remontent au début du flot) : x 432,0-439,2 km, y 5333,2-5341,2 km, 288×320×32 (2,95 M points). Le parent est l'enfant 50 m v3 (glissant, 930 s). L'enfant part de t0 = 89 280 s (cycle 2 du v3, celui de `v3_noslip`) et dure 1 cycle, avec des parois non glissantes et une sortie `hf2D` (u, v, w à ~1, 5 et 9 m) toutes les 120 s.
 
 ```bash
 cd ~/saguenay-mitgcm && git pull
@@ -305,10 +305,12 @@ cd ../run && ln -sf ../input/* . && ln -sf ../build/mitgcmuv .
 Essai court (60 pas), puis le vrai run :
 
 ```bash
-sed 's/nTimeSteps = 8928,/nTimeSteps = 60,/' ../input/data > data && mpirun -np 2 ./mitgcmuv > output.txt
+sed 's/nTimeSteps = 8928,/nTimeSteps = 60,/' ../input/data > data && mpirun -np 2 ./mitgcmuv > output.txt &
+sleep 60; free -h                             # mémoire pendant le run (il faut de la marge sur 3,8 Go)
+wait
 grep -i "nan\|error" STDOUT.0000 | head ; grep advcfl STDOUT.0000 | tail -4
 rm -f data STDOUT.* STDERR.* eta2D.* lev2D.* hf2D.* state3D.* mean3D.* flux3D.* && ln -sf ../input/data .
 nohup mpirun -np 2 ./mitgcmuv > output.txt &
 ```
 
-Coût : 8 928 pas × 1,72 M points × ~1e-5 cœur.s ≈ 21 h sur 2 cœurs. Disque ≈ 3 Go (state3D à 930 s ≈ 2 Go, hf2D ≈ 0,7 Go). Analyses : `comparer.py` (parent v3), `tourbillon_anse.py` et `ondes_seuil.py` avec `--origine-utm 432000 5335600`. Le parent glissant force un enfant non glissant : les frontières sont à ≥ 1,2 km du décollement, mais il faut l'avoir en tête.
+Coût : 8 928 pas × 2,95 M points × ~1e-5 cœur.s ≈ 37 h sur 2 cœurs. Mémoire estimée ~2,2 Go (0,76 Ko par point ; à vérifier avec `free -h` pendant l'essai). Disque ≈ 4,6 Go (state3D à 930 s ≈ 3,4 Go, hf2D ≈ 1,2 Go). Pour faire de la place après l'extraction, les state3D des cycles 0 et 1 du v3 (itérations < 17856) ne servent plus : `cd ~/runs/enfantA_v3/run && ls state3D.00000*.data | awk -F. '$2<17856' | sed 's/data$//' | xargs -I{} sh -c 'rm -f {}data {}meta'` libère ~4 Go. Analyses : `comparer.py` (parent v3), `tourbillon_anse.py` et `ondes_seuil.py` avec `--origine-utm 432000 5333200`. Le parent glissant force un enfant non glissant : les frontières sont à ≥ 1,2 km du décollement, mais il faut l'avoir en tête.

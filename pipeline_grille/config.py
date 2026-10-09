@@ -232,11 +232,13 @@ if PROFILE == "mini25":
     #   cap   : le coude, le cap et l'anse au sud ; OB O dans le bras est-ouest, OB S dans le bras
     #           nord-sud ; 160 x 200 x 32 (1,02 M points).
     #   anse  : rétrécissement cap / Anse-de-Roche (sortie du jet de jusant), rive est où la couche
-    #           limite décolle, cyclone (48,200 N 69,882 O), mouillage et côté amont du col ;
-    #           224 x 240 x 32 (1,72 M points), à >= 1,2 km des bords de l'enfant 50 m v3.
+    #           limite décolle, cyclone (48,200 N 69,882 O), mouillage, col et bassin aval (ressaut
+    #           de jusant) : les ondes observées remontent vers l'amont au début du flot, leur source
+    #           probable (col, aval) doit être dans le domaine (2026-10-09). 288 x 320 x 32
+    #           (2,95 M points), à >= 1,2 km des bords de l'enfant 50 m v3.
     ZONES = {"seuil": (434000.0, 439600.0, 5332000.0, 5338400.0),
              "cap":   (431900.0, 435900.0, 5338400.0, 5343400.0),
-             "anse":  (432000.0, 437600.0, 5335600.0, 5341600.0)}
+             "anse":  (432000.0, 439200.0, 5333200.0, 5341200.0)}
     GRIDS = {"parent": dict(dx=50.0, depuis=(MINI_OUT, "child")),
              "child": dict(dx=25.0, utm=ZONES[ZONE])}
     NR, NSURF, DZ_SURF = 32, 4, 2.0
