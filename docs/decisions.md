@@ -1,4 +1,4 @@
-# Configuration MITgcm Saguenay : décisions et état (2026-10-07)
+# Configuration MITgcm Saguenay : décisions et état (2026-10-09)
 
 Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3fb70c27403
 
@@ -16,6 +16,14 @@ Cahier des charges (document Claude) : https://claude.ai/code/artifact/79bedf7f-
 - Le profil lite (5 M points) a été tué par manque de mémoire (OOM) sur 3 processus, d'où la création du profil mini.
 - Pas d'Ubuntu/WSL sur le poste du travail.
 - Python sur la VM : dans un venv (Ubuntu 24.04 refuse pip dans le Python système ; un NumPy 2 installé par pip à côté de rasterio d'apt casse l'import). setup_mitgcm.sh n'utilise plus pip hors venv.
+
+## Cadre du projet (2026-10-09, cahier des charges mis à jour)
+- **Système étudié** : 2e seuil + trains d'ondes internes + cyclone de l'Anse-de-Roche (Q1 à Q3 ci-dessous). Sens confirmé par l'utilisateur : **cyclone (antihoraire)**. Seuil de Tadoussac, tourbillon du cap (Livernoche), vent et marée à plusieurs constituantes : hors périmètre.
+- **Livrables** : article ou rapport scientifique + configuration MITgcm réutilisable (ce dépôt). Échéance visée : **Noël 2026**, souple.
+- **Validation** : cohérence interne (stabilité, conservation, imbrication < 5 %), littérature (Guay 2023, Bourgault et al. 2011, Belzile et al. 2016) et observations de l'utilisateur (dérive de la glace, ADCP + CTD), de façon qualitative ou en ordre de grandeur. Marégraphes et WebTide non utilisés.
+- **Référence** : M2 pure de 1,6 m (marée moyenne), profil d'été. Sensibilités par priorité : A contre B ; parois (sideDragFactor, maille) ; stratification d'hiver ; puis vives-eaux, viscC2smag, KPP.
+- **Grappe** : accès confirmé, disponible dans ~2 semaines (vers le 23 oct.). Chaîne de la VM jusque-là ; sur la grappe : banc d'essai, enfant B à 25 m, puis la config complète si le temps le permet.
+- **Jalons proposés** : 25 m « anse » A non glissant (16 oct.), arrivée de la grappe (23 oct.), 25 m « anse » B (13 nov.), couplage et sensibilités (4 déc.), rédaction (24 déc.).
 
 ## Questions scientifiques (recadrées le 2026-10-07, observations de l'utilisateur)
 Observations de l'utilisateur :

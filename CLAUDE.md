@@ -41,14 +41,16 @@ Configuration MITgcm (checkpoint69k) haute résolution du fjord du Saguenay : si
 
 ## Plan (cahier des charges)
 
-Cahier des charges : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3fb70c27403 (non accessible depuis le nuage ; l'essentiel est ici et dans `docs/decisions.md`).
+Cahier des charges (mis à jour le 2026-10-09) : https://claude.ai/code/artifact/79bedf7f-436f-4b37-a33e-e3fb70c27403. C'est un document Claude Docs, lisible et modifiable avec le connecteur Claude Docs. Livrables : article ou rapport + config réutilisable, vers Noël 2026. Grappe disponible vers le 23 oct.
 
-0. Remise à plat : dépôt git (fait), pipeline grille, correction bathy, banc d'essai MPI.
-1. Parent A à 100 m (marée OBCS, rivière, z*, GGL90), run de 6 jours ; critères de marée et de conservation.
-2. Enfant A à 25 m par extraction OBCS depuis le parent, 2 jours ; cohérence de l'imbrication < 5 %.
-3. Analyses : décomposition de phase, détection, énergétique, flux aux seuils ; robustesse 25 m contre 50 m.
-4. Sensibilités, dont KPP.
-5. Enfant B non hydrostatique, en surface libre linéaire (obligatoire).
+0. Remise à plat : fait.
+1. Chaîne VM (mini 200 m, enfants 50 m) : fait, imbrication < 1 %.
+2. Cyclone à 50 m (v3 glissant et non glissant) : fait, ordre de grandeur atteint en non glissant.
+3. Enfant 25 m « anse », A non glissant, sur la VM (cible 16 oct.).
+4. Arrivée de la grappe : figures de présentation, banc d'essai (cible 23 oct.).
+5. Enfant 25 m « anse », B (NH, hf2D à 60 s) : source des ondes, A contre B (cible 13 nov.).
+6. Couplage ondes-cyclone (Q3) et sensibilités : sideDragFactor, stratification d'hiver (cible 4 déc.).
+7. Rédaction et README de la config (cible 24 déc.).
 
 ## Pièges vérifiés dans le source 69k
 
